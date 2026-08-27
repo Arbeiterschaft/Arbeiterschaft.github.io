@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} · {% endif %}{{ site.title }}</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+</head>
+<body>
+  <header>
+    <a class="site-title" href="{{ '/' | relative_url }}">{{ site.title }}</a>
+    <nav>
+      {% for item in site.nav %}<a href="{{ item.url | relative_url }}">{{ item.title }}</a>{% endfor %}
+    </nav>
+  </header>
+
+  <main>
+    {% if page.title and page.url != '/' %}<h1>{{ page.title }}</h1>{% endif %}
+    {% if page.date %}<p class="meta">{{ page.date | date: "%B %-d, %Y" }}</p>{% endif %}
+    {{ content }}
+  </main>
+
+  <footer>
+    {% if site.email %}<a href="mailto:{{ site.email }}">Email</a>{% endif %}
+    {% if site.github %}<a href="https://github.com/{{ site.github }}">GitHub</a>{% endif %}
+    {% if site.linkedin %}<a href="https://www.linkedin.com/in/{{ site.linkedin }}">LinkedIn</a>{% endif %}
+  </footer>
+</body>
+</html>

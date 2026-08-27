@@ -1,0 +1,26 @@
+title: Jilu Wang
+tagline: Student at UPenn
+email: jiluwang2001@gmail.com
+description: Personal portfolio.
+
+# Links shown in the footer. Delete any you don't use.
+github: your-github-username
+linkedin:
+
+# Site URL. For a user site (your-username.github.io) leave baseurl empty.
+# For a project site (github.com/you/repo) set baseurl: "/repo"
+url: "https://your-github-username.github.io"
+baseurl: ""
+
+# Top navigation. Add a line here when you add a new page.
+nav:
+  - title: Home
+    url: /
+  - title: Projects
+    url: /projects/
+  - title: Writing
+    url: /writing/
+
+permalink: /writing/:title/
+markdown: kramdown
+exclude: [README.md, Gemfile, Gemfile.lock, vendor]
