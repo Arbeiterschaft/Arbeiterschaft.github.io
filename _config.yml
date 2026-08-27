@@ -4,12 +4,12 @@ email: jiluwang2001@gmail.com
 description: Personal portfolio.
 
 # Links shown in the footer. Delete any you don't use.
-github: your-github-username
+github: Arbeiterschaft
 linkedin:
 
 # Site URL. For a user site (your-username.github.io) leave baseurl empty.
 # For a project site (github.com/you/repo) set baseurl: "/repo"
-url: "https://your-github-username.github.io"
+url: "https://arbeiterschaft.github.io"
 baseurl: ""
 
 # Top navigation. Add a line here when you add a new page.
