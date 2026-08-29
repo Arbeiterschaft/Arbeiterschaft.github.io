@@ -1,0 +1,13 @@
+Need to prepare List:
+
+1. About(Detailed of resume without projects)
+2. Profolio short intro.
+3. projects 
+    a. Name, headline picture
+    b. Detailed pictures
+    c. Detailed description
+
+    Includes: Embedded(2), learning in robo, intro to robo, img2gps, sung, k2
+
+4. resume
+5. Interest, motor trip.

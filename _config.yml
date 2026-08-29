@@ -5,11 +5,11 @@ description: Personal portfolio.
 
 # Links shown in the footer. Delete any you don't use.
 github: Arbeiterschaft
-linkedin:
+linkedin: www.linkedin.com/in/jilu-wang-dannies
 
 # Site URL. For a user site (your-username.github.io) leave baseurl empty.
 # For a project site (github.com/you/repo) set baseurl: "/repo"
-url: "https://arbeiterschaft.github.io"
+url: "https://Arbeiterschaft.github.io"
 baseurl: ""
 
 # Top navigation. Add a line here when you add a new page.
