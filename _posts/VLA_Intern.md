@@ -1,6 +1,6 @@
-# [Project Name]
+# [VLA Engineering Intern, K2 Dynamic Ltd]
 
-**Category:** Embedded System
+**Category:** Robotics
 
 [One-sentence description: what it is and what it does. Write it the way you'd explain it to another engineer in an interview.]
 
@@ -64,3 +64,18 @@
 - Source code: [ ]
 - Demo video: [ ]
 - Writeup / report: [ ]
+
+
+
+Built an end-to-end VLA pipeline enabling a Unitree G1 humanoid to follow natural-language walk commands in simulation: 
+teleoperated data collection → LeRobot dataset conversion → VLA fine-tuning (frozen Qwen3-VL + 3-DoF action head) → 
+WebSocket policy server → 50 Hz real-time control client over DDS. Final model generalizes to 5 distinct commands; packaged 
+as 7 one-command scripts with full runbook documentation. 
+⚫ Implemented a simulated Livox Mid-360 LiDAR publishing to the identical DDS topic, type, and frame as the physical robot, 
+ensuring downstream tools run unmodified against sim or hardware. Built a ground-truth verification harness that exposed 6 
+correctness bugs in the RTX-sensor implementation and rewrote on a mesh ray-caster, raising obstacle coverage from 8/72 to 
+72/72 azimuth bins. 
+⚫ Brought up Isaac Sim 5.1 from source on an unsupported OS (CentOS Stream 10) using a containerized build toolchain; stood 
+up isolated environments spanning Isaac Lab, LeRobot, GR00T N1.5, and LIBERO, and debugged multi-GPU, DDS multicast, 
+and CUDA device-ordering failures blocking the full stack.
+
