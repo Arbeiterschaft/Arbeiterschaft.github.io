@@ -79,3 +79,14 @@ correctness bugs in the RTX-sensor implementation and rewrote on a mesh ray-cast
 up isolated environments spanning Isaac Lab, LeRobot, GR00T N1.5, and LIBERO, and debugged multi-GPU, DDS multicast, 
 and CUDA device-ordering failures blocking the full stack.
 
+
+VLM
+RL
+fine-tuning
+sim-to-real policy deployment
+1. 在不兼容的centOs上面使用docker build了isaacsim作为仿真环境。
+
+
+4. 在orange Pi上搭建中转，运行rxnn文件，再传送回服务器进行仿真测试
+5. 复现论文，训练自己的机器人的基础policy，使用H6000
+6. Deploy starVLA，使用frozen Qwen3-VL + 3-DoF action head
