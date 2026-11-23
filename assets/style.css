@@ -14,7 +14,14 @@
   --font:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-size:  16px;   /* base text size; headings scale with it */
   --name-size:  1.3rem; /* your name in the top bar */
-  --nav-size:   1rem;   /* Projects / Blogs / Interests */
+  --nav-size:   1.3rem;   /* Projects / Blogs / Interests */
+
+  /* Cards (projects, interests) */
+  --cards-per-row: 2;       /* cards in one row on a computer (phones always show 1) */
+  --card-gap:      2rem;    /* space between cards */
+  --cover-ratio:   4 / 3;   /* cover shape: 4 / 3, 16 / 9, 1 / 1 (square) ... */
+  --card-title-size: 1.05rem; /* card headline */
+  --card-text-size:  1rem;    /* card one-sentence intro */
 }
 
 * { box-sizing: border-box; }
@@ -61,22 +68,22 @@ nav a { color: var(--fg); font-size: var(--nav-size); }
 /* Card grid (projects, interests) */
 .cards {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 2.5rem 2rem;
+  grid-template-columns: repeat(var(--cards-per-row), 1fr);
+  gap: calc(var(--card-gap) + 0.5rem) var(--card-gap);
   margin-top: 1.5rem;
 }
 .card { color: var(--fg); display: block; }
 .card:hover { text-decoration: none; }
 .card img, .card .no-cover {
-  width: 100%; aspect-ratio: 4 / 3;
+  width: 100%; aspect-ratio: var(--cover-ratio);
   object-fit: cover;
   border: 1px solid var(--line);
   background: var(--soft);
   display: block;
 }
 .card:hover img, .card:hover .no-cover { opacity: 0.85; }
-.card h3 { margin: 0.8rem 0 0.25rem; }
-.card p { margin: 0; color: var(--muted); }
+.card h3 { margin: 0.8rem 0 0.25rem; font-size: var(--card-title-size); }
+.card p { margin: 0; color: var(--muted); font-size: var(--card-text-size); }
 
 @media (max-width: 640px) {
   .intro { flex-direction: column; align-items: center; text-align: left; }
