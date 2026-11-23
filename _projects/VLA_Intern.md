@@ -1,3 +1,11 @@
+---
+title: "VLA Engineering Intern, K2 Dynamic Ltd"
+summary: "One-sentence intro goes here."
+cover: 
+date: 2026-06-01
+published: false   # switch: true = shown, false = hidden
+---
+
 # [VLA Engineering Intern, K2 Dynamic Ltd]
 
 **Category:** Robotics

@@ -1,3 +1,11 @@
+---
+title: "Project template"
+summary: "Empty template — copy it to start a new project."
+cover: 
+date: 2026-08-26
+published: false   # switch: true = shown, false = hidden
+---
+
 # [Project Name]
 
 **Category:** Embedded System

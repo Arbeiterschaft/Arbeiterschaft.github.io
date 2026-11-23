@@ -1,3 +1,9 @@
+---
+title: "Why Do I Always Think My Past Self Was an Idiot?"
+date: 2026-11-14
+published: true   # switch: true = shown, false = hidden
+---
+
 # 为什么我回顾过去时总觉得以前的自己是个傻逼
 ## Why Do I Always Think My Past Self Was an Idiot?
 *2026-11-14, 14：11 EST*

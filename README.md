@@ -6,13 +6,18 @@ site updates.
 ## Files
 
 ```
-_config.yml          site title, links, nav menu
-_layouts/default.html   the one HTML template every page uses
-assets/style.css     all the styling
-index.md             home page
-projects.md          projects page
-writing.md           list of posts (generated automatically)
-_posts/              one markdown file per post
+_config.yml              site title, links, top-bar menu
+_layouts/default.html    the one HTML template every page uses
+_includes/card-grid.html the picture-card grid (home, Projects, Interests)
+assets/style.css         all styling — the SETTINGS block at the top (colors, fonts) restyles the site
+index.md                 home page: photo + intro text, then project cards
+projects.md              /projects/  — project cards
+blogs.md                 /blogs/     — list of blog posts
+interests.md             /interests/ — interest cards
+_projects/               one markdown file per project
+_blogs/                  one markdown file per blog post
+_interests/              one markdown file per interest
+pics/                    images (one folder per item)
 ```
 
 ## Setup (once)
@@ -26,20 +31,37 @@ _posts/              one markdown file per post
 
 First build takes a minute or two. After that, every push is live in ~30 seconds.
 
-## Adding a post
+## Adding a project / blog / interest
 
-Create `_posts/YYYY-MM-DD-title.md`:
+Create a file in `_projects/`, `_blogs/` or `_interests/` that starts with:
 
 ```markdown
 ---
-layout: default
-title: My post title
+title: My project
+summary: One-sentence intro shown under the card.
+cover: /pics/My_project/cover.gif
+date: 2026-09-01
+published: true   # switch: true = shown, false = hidden
 ---
 
 Write in Markdown here.
 ```
 
-The date in the filename orders the list on `/writing/`. Nothing else to update.
+- **The switch:** `published: false` hides the item everywhere and doesn't build its page.
+  Set it to `true` when the item is ready.
+- `summary` and `cover` are used on cards (blogs only need `title` and `date`).
+  A card without a cover shows an empty box.
+- `date` sets the order: newest first.
+- The file name becomes the URL, e.g. `_projects/IROS_race.md` → `/projects/IROS_race/`.
+
+## Changing the home page text
+
+Edit the text between the `<div class="intro-text">` lines in `index.md`.
+The photo is `pics/pfp.jpg`.
+
+## Changing colors and fonts
+
+Edit the `SETTINGS` block at the top of `assets/style.css` (colors, font, text sizes).
 
 ## Adding a page
 

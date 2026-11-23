@@ -1,49 +1,87 @@
+/* ============================================================
+   SETTINGS — change these to restyle the whole site.
+   ============================================================ */
 :root {
-  --bg: #ffffff;
-  --fg: #1a1a1a;
-  --muted: #6b6b6b;
-  --link: #0b5fff;
-  --line: #e4e4e4;
-}
+  /* Colors */
+  --bg:    #fffdf5;   /* page background (ivory) */
+  --fg:    #1f1d1a;   /* main text */
+  --muted: #6f6a60;   /* dates, small text */
+  --link:  #1f4e8c;   /* links */
+  --line:  #1f1d1a;   /* outlines: top bar, cards, photo */
+  --soft:  #f1ecdc;   /* light fills: code blocks, empty card covers */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16181c;
-    --fg: #e6e6e6;
-    --muted: #9a9a9a;
-    --link: #7aa7ff;
-    --line: #2c2f36;
-  }
+  /* Fonts */
+  --font:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-size:  16px;   /* base text size; headings scale with it */
+  --name-size:  1.3rem; /* your name in the top bar */
+  --nav-size:   1rem;   /* Projects / Blogs / Interests */
 }
 
 * { box-sizing: border-box; }
 
 body {
-  max-width: 42rem;
+  max-width: 60rem;
   margin: 0 auto;
   padding: 3rem 1.25rem 4rem;
   background: var(--bg);
   color: var(--fg);
-  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font);
+  font-size: var(--font-size);
+  line-height: 1.65;
 }
 
 a { color: var(--link); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* Top bar */
 header {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  align-items: baseline;
+  gap: 1rem;
+  align-items: center;
   justify-content: space-between;
-  padding-bottom: 1rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--line);
-  margin-bottom: 2.5rem;
+  margin-bottom: 3rem;
 }
+.site-title { font-weight: 700; font-size: var(--name-size); color: var(--fg); }
+nav { display: flex; flex-wrap: wrap; gap: 1.75rem; }
+nav a { color: var(--fg); font-size: var(--nav-size); }
 
-.site-title { font-weight: 600; font-size: 1.1rem; color: var(--fg); }
-nav a { margin-left: 1rem; }
-nav a:first-child { margin-left: 0; }
+/* Home: photo + text */
+.intro { display: flex; gap: 2.5rem; align-items: flex-start; margin-bottom: 3.5rem; }
+.avatar {
+  width: 11rem; height: 11rem; flex-shrink: 0;
+  object-fit: cover;
+  border: 1px solid var(--line);
+}
+.intro-text { flex: 1; }
+.intro-text > :last-child { margin-bottom: 0; }
+
+/* Card grid (projects, interests) */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2.5rem 2rem;
+  margin-top: 1.5rem;
+}
+.card { color: var(--fg); display: block; }
+.card:hover { text-decoration: none; }
+.card img, .card .no-cover {
+  width: 100%; aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  display: block;
+}
+.card:hover img, .card:hover .no-cover { opacity: 0.85; }
+.card h3 { margin: 0.8rem 0 0.25rem; }
+.card p { margin: 0; color: var(--muted); }
+
+@media (max-width: 640px) {
+  .intro { flex-direction: column; align-items: center; text-align: left; }
+  .cards { grid-template-columns: 1fr; }
+}
 
 h1, h2, h3 { line-height: 1.3; margin: 2rem 0 0.75rem; }
 h1 { font-size: 1.6rem; margin-top: 0; }
@@ -64,26 +102,26 @@ img { max-width: 100%; height: auto; }
   gap: 0 0.75rem;
   justify-content: space-between;
   padding: 0.5rem 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--soft);
 }
 .list .date { color: var(--muted); font-size: 0.9rem; white-space: nowrap; }
 
 blockquote {
   margin: 0 0 1rem;
   padding-left: 1rem;
-  border-left: 3px solid var(--line);
+  border-left: 3px solid var(--soft);
   color: var(--muted);
 }
 
 code {
-  background: var(--line);
+  background: var(--soft);
   padding: 0.1em 0.35em;
   border-radius: 3px;
   font-size: 0.9em;
 }
 
 pre {
-  background: var(--line);
+  background: var(--soft);
   padding: 0.9rem;
   border-radius: 5px;
   overflow-x: auto;
@@ -91,7 +129,7 @@ pre {
 pre code { background: none; padding: 0; }
 
 table { width: 100%; border-collapse: collapse; margin-bottom: 1rem; }
-th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--line); }
+th, td { text-align: left; padding: 0.4rem 0.6rem; border-bottom: 1px solid var(--soft); }
 
 footer {
   margin-top: 4rem;

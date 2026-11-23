@@ -1,0 +1,16 @@
+{%- comment -%} Card grid. Usage: {% include card-grid.html items=site.projects %} {%- endcomment -%}
+{%- assign items = include.items | sort: "date" | reverse -%}
+<div class="cards">
+  {%- for item in items %}
+  <a class="card" href="{{ item.url | relative_url }}">
+    {%- if item.cover and item.cover != "" %}
+    <img src="{{ item.cover | relative_url }}" alt="{{ item.title }}" loading="lazy">
+    {%- else %}
+    <div class="no-cover"></div>
+    {%- endif %}
+    <h3>{{ item.title }}</h3>
+    <p>{{ item.summary }}</p>
+  </a>
+  {%- endfor %}
+</div>
+{%- if items.size == 0 %}<p class="meta">Nothing here yet.</p>{% endif %}
