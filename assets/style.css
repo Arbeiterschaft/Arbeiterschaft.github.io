@@ -5,10 +5,10 @@
   /* Colors */
   --bg:    #faebaf;   /* page background (ivory) */
   --fg:    #1f1d1a;   /* main text */
-  --muted: #7d6f52;   /* dates, small text */
+  --muted: #4d3e1f;   /* dates, small text */
   --link:  #1f8c68;   /* links */
   --line:  #1f1d1a;   /* outlines: top bar, cards, photo */
-  --soft:  #bbfbf8;   /* light fills: code blocks, empty card covers */
+  --soft:  #e7dd97;   /* light fills: code blocks, empty card covers */
 
   /* Fonts */
   --font:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
