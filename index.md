@@ -8,13 +8,11 @@ title: Home
 
 <!-- ✏️ Edit the text below freely (normal Markdown). -->
 
-Student at the University of Pennsylvania. One or two sentences about what you
-work on and what you're looking for. Keep it short — this is the first thing
-people read.
+# JiLu Wang
+*Robotics Software Engineer | MSEE @UPenn | GRASP Lab*
 
-- **Studying:** your program, UPenn
-- **Interested in:** topic one, topic two, topic three
-- **Contact:** [{{ site.email }}](mailto:{{ site.email }})
+I am a robotics engineer with experience in end-to-end robotic system development, from hardware integration and embedded software to high-level algorithms. My research and professional experience spans robot learning, perception, planning, and control, with a strong focus on integrating algorithms into real-world robotic systems.
+
 
 </div>
 </section>
