@@ -3,7 +3,7 @@
    ============================================================ */
 :root {
   /* Colors */
-  --bg:    #faebaf;   /* page background (ivory) */
+  --bg:    #fbefc2;   /* page background (ivory) */
   --fg:    #1f1d1a;   /* main text */
   --muted: #4d3e1f;   /* dates, small text */
   --link:  #1f8c68;   /* links */
@@ -13,7 +13,7 @@
   /* Fonts */
   --font:       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-size:  16px;   /* base text size; headings scale with it */
-  --name-size:  1.3rem; /* your name in the top bar */
+  --name-size:  1.5rem; /* your name in the top bar */
   --nav-size:   1.3rem;   /* Projects / Blogs / Interests */
 
   /* Cards (projects, interests) */
