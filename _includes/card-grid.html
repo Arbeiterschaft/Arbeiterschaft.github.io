@@ -4,7 +4,7 @@
   {%- for item in items %}
   <a class="card" href="{{ item.url | relative_url }}">
     {%- if item.cover and item.cover != "" %}
-    <img src="{{ item.cover | relative_url }}" alt="{{ item.title }}" loading="lazy">
+    {% include media.html src=item.cover alt=item.title %}
     {%- else %}
     <div class="no-cover"></div>
     {%- endif %}

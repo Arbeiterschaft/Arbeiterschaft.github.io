@@ -6,6 +6,7 @@
   <title>{% if page.title and page.url != '/' %}{{ page.title }} · {% endif %}{{ site.title }}</title>
   <meta name="description" content="{{ page.summary | default: site.description }}">
   <link rel="stylesheet" href="{{ '/assets/style.css' | relative_url }}">
+  <script src="{{ '/assets/media.js' | relative_url }}" defer></script>
 </head>
 <body>
   <header>

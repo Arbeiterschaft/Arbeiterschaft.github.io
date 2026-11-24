@@ -1,3 +1,11 @@
+---
+title: "[Project Name]"
+summary: "[One-sentence intro shown under the card.]"
+cover: /pics/[Project_folder]/cover.gif   # image (.gif .jpg .png .webp) or video (.mp4 .webm)
+date: 2026-01-01
+published: false   # switch: true = shown, false = hidden
+---
+
 # [Project Name]
 
 **Category:** [e.g. Autonomous Systems / Embedded Firmware]
@@ -57,9 +65,13 @@
 
 ## Build Gallery
 
-> [Placeholder: list photo/video filenames or captions here for now, e.g.]
-> - photo1.jpg — [what it shows]
-> - demo.mp4 — [what it shows]
+<!-- Images: ![caption](/pics/[Project_folder]/photo1.jpg)
+     Videos (or images): the include picks <img> or <video> from the extension.
+     Videos autoplay muted on a loop, without controls. -->
+
+![photo1](/pics/[Project_folder]/photo1.jpg)
+
+{% include media.html src="/pics/[Project_folder]/demo.mp4" alt="[what it shows]" %}
 
 ---
 

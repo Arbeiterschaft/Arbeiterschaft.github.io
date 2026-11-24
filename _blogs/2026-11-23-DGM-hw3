@@ -952,3 +952,3399 @@ combine, or transform specific components of a token.
 5. Under a suitable construction, a transformer forward pass
    can simulate one gradient descent step in linear regression
    through an equivalent token update.
+
+
+   # HW3 Problem 2 — Diffusion with a Mixture of Gaussians
+
+# Part I — Mathematical Foundations
+
+## 1. Expectation and Covariance
+
+### 1.1 Expectation
+
+For a continuous random vector:
+
+$$
+\mu_x=\mathbb E[x]=\int xp(x)\,dx
+$$
+
+Linearity of expectation:
+
+$$
+\mathbb E[Ax+b]=A\mathbb E[x]+b
+$$
+
+$$
+\mathbb E[x+y]=\mathbb E[x]+\mathbb E[y]
+$$
+
+Linearity does not require independence.
+
+### 1.2 Covariance
+
+$$
+\boxed{
+\operatorname{Cov}(x)
+=
+\mathbb E[(x-\mu_x)(x-\mu_x)^\top]
+}
+$$
+
+Equivalently,
+
+$$
+\operatorname{Cov}(x)
+=
+\mathbb E[xx^\top]-\mu_x\mu_x^\top
+$$
+
+For zero-mean random variables:
+
+$$
+\boxed{
+\operatorname{Cov}(x)=\mathbb E[xx^\top]
+}
+$$
+
+For a two-dimensional random vector:
+
+$$
+\Sigma=
+\begin{bmatrix}
+\operatorname{Var}(x_1)&\operatorname{Cov}(x_1,x_2)\\
+\operatorname{Cov}(x_2,x_1)&\operatorname{Var}(x_2)
+\end{bmatrix}
+$$
+
+- Diagonal entries: individual variances.
+- Off-diagonal entries: covariance between dimensions.
+
+### 1.3 Cross-Covariance
+
+$$
+\boxed{
+\operatorname{Cov}(x,y)
+=
+\mathbb E[(x-\mu_x)(y-\mu_y)^\top]
+}
+$$
+
+For zero-mean random variables:
+
+$$
+\operatorname{Cov}(x,y)=\mathbb E[xy^\top]
+$$
+
+Important properties:
+
+$$
+\operatorname{Cov}(x,y)
+=
+\operatorname{Cov}(y,x)^\top
+$$
+
+$$
+\operatorname{Cov}(Ax,By)
+=
+A\operatorname{Cov}(x,y)B^\top
+$$
+
+$$
+x\perp y
+\implies
+\operatorname{Cov}(x,y)=0
+$$
+
+Zero covariance does not generally imply independence.
+However, it does imply independence for jointly Gaussian
+random variables.
+
+### 1.4 Covariance of a Sum
+
+$$
+\begin{aligned}
+\operatorname{Cov}(x+y)
+={}&\operatorname{Cov}(x)
++\operatorname{Cov}(y)\\
+&+\operatorname{Cov}(x,y)
++\operatorname{Cov}(y,x)
+\end{aligned}
+$$
+
+If $x$ and $y$ are independent:
+
+$$
+\boxed{
+\operatorname{Cov}(x+y)
+=
+\operatorname{Cov}(x)+\operatorname{Cov}(y)
+}
+$$
+
+### 1.5 Matrix Dimensions
+
+Let $x\in\mathbb R^d$ and $y\in\mathbb R^m$.
+
+| Variable | Dimension |
+|---|---|
+| $x$ | $d\times1$ |
+| $y$ | $m\times1$ |
+| $\mathbb E[x]$ | $d\times1$ |
+| $\mathbb E[y]$ | $m\times1$ |
+| $\operatorname{Cov}(x)$ | $d\times d$ |
+| $\operatorname{Cov}(y)$ | $m\times m$ |
+| $\operatorname{Cov}(x,y)$ | $d\times m$ |
+| $\operatorname{Cov}(y,x)$ | $m\times d$ |
+
+---
+
+## 2. Matrix Foundations
+
+### 2.1 Positive Definite Matrix
+
+A symmetric matrix $A$ is positive definite if
+
+$$
+v^\top Av>0,\qquad \forall v\neq0
+$$
+
+Notation:
+
+$$
+A\succ0
+$$
+
+Properties:
+
+- All eigenvalues are positive.
+- $A$ is invertible.
+- $\det(A)>0$.
+- $A^{-1}$ is symmetric positive definite.
+
+Covariance matrices are positive semidefinite in general.
+A nondegenerate Gaussian distribution has a positive definite
+covariance matrix.
+
+### 2.2 Matrix Transpose and Inverse
+
+$$
+(AB)^\top=B^\top A^\top
+$$
+
+$$
+(AB)^{-1}=B^{-1}A^{-1}
+$$
+
+$$
+(A^{-1})^\top=(A^\top)^{-1}
+$$
+
+If $A$ is symmetric and invertible:
+
+$$
+(A^{-1})^\top=A^{-1}
+$$
+
+### 2.3 Matrix Commutativity
+
+In general,
+
+$$
+AB\neq BA
+$$
+
+However, if
+
+$$
+B=aA+bI
+$$
+
+then
+
+$$
+AB=A(aA+bI)=aA^2+bA
+$$
+
+$$
+BA=(aA+bI)A=aA^2+bA
+$$
+
+Therefore,
+
+$$
+AB=BA
+$$
+
+If $B$ is invertible:
+
+$$
+AB^{-1}=B^{-1}A
+$$
+
+### 2.4 Useful Matrix Identity
+
+Given
+
+$$
+B=aA+bI
+$$
+
+we have
+
+$$
+\begin{aligned}
+I-aAB^{-1}
+&=BB^{-1}-aAB^{-1}\\
+&=(B-aA)B^{-1}\\
+&=bB^{-1}
+\end{aligned}
+$$
+
+Therefore,
+
+$$
+\boxed{
+I-aAB^{-1}=bB^{-1}
+}
+$$
+
+Similarly,
+
+$$
+\boxed{
+I-bB^{-1}=aAB^{-1}
+}
+$$
+
+These identities are useful for simplifying diffusion
+covariance and denoising expressions.
+
+### 2.5 Quadratic Form and Matrix Gradient
+
+A quadratic form is defined as
+
+$$
+f(x)=x^\top Ax
+$$
+
+Its gradient is
+
+$$
+\boxed{
+\nabla_x(x^\top Ax)=(A+A^\top)x
+}
+$$
+
+If $A$ is symmetric:
+
+$$
+\boxed{
+\nabla_x(x^\top Ax)=2Ax
+}
+$$
+
+For a shifted quadratic form:
+
+$$
+\nabla_x[(x-\mu)^\top A(x-\mu)]
+=
+(A+A^\top)(x-\mu)
+$$
+
+### Gradient Formula Table
+
+| Function | Gradient w.r.t. $x$ |
+|---|---|
+| $a^\top x$ | $a$ |
+| $x^\top x$ | $2x$ |
+| $\frac12x^\top x$ | $x$ |
+| $x^\top Ax$ | $(A+A^\top)x$ |
+| $x^\top Ax$, symmetric $A$ | $2Ax$ |
+| $\frac12(x-\mu)^\top A(x-\mu)$, symmetric $A$ | $A(x-\mu)$ |
+| $-\frac12(x-\mu)^\top A(x-\mu)$, symmetric $A$ | $-A(x-\mu)$ |
+
+### 2.6 Schur Complement
+
+Given a block matrix
+
+$$
+M=
+\begin{bmatrix}
+A&B\\
+C&D
+\end{bmatrix}
+$$
+
+where $D$ is invertible, the Schur complement of $D$ is
+
+$$
+\boxed{
+S=A-BD^{-1}C
+}
+$$
+
+This matrix structure appears in the conditional covariance
+of jointly Gaussian random variables.
+
+---
+
+## 3. Multivariate Gaussian Distribution
+
+### 3.1 Definition
+
+$$
+x\sim\mathcal N(\mu,\Sigma)
+$$
+
+The probability density function is
+
+$$
+\boxed{
+p(x)=
+\frac{1}{(2\pi)^{d/2}|\Sigma|^{1/2}}
+\exp\left[
+-\frac12(x-\mu)^\top
+\Sigma^{-1}(x-\mu)
+\right]
+}
+$$
+
+### Matrix Dimensions
+
+| Variable | Dimension | Meaning |
+|---|---|---|
+| $x$ | $d\times1$ | Random vector |
+| $\mu$ | $d\times1$ | Mean vector |
+| $\Sigma$ | $d\times d$ | Covariance matrix |
+| $\Sigma^{-1}$ | $d\times d$ | Precision matrix |
+| $\det(\Sigma)$ | Scalar | Determinant |
+| $p(x)$ | Scalar | Probability density |
+| $(x-\mu)^\top\Sigma^{-1}(x-\mu)$ | Scalar | Squared Mahalanobis distance |
+
+### 3.2 Special Gaussian Distributions
+
+| Distribution | Meaning |
+|---|---|
+| $\mathcal N(0,\Sigma)$ | Zero-mean Gaussian |
+| $\mathcal N(\mu,\sigma^2I)$ | Isotropic Gaussian |
+| $\mathcal N(0,I)$ | Standard multivariate Gaussian |
+| $\mathcal N(\mu,\operatorname{diag}(\sigma_1^2,\ldots,\sigma_d^2))$ | Diagonal covariance Gaussian |
+
+### 3.3 Precision Matrix
+
+$$
+\boxed{
+\Lambda=\Sigma^{-1}
+}
+$$
+
+A large precision along a direction corresponds to a small
+variance along that direction.
+
+---
+
+## 4. Gaussian Affine Transformation
+
+### 4.1 General Formula
+
+Given
+
+$$
+x\sim\mathcal N(\mu,\Sigma)
+$$
+
+and
+
+$$
+y=Ax+b
+$$
+
+then
+
+$$
+\boxed{
+y\sim\mathcal N(A\mu+b,A\Sigma A^\top)
+}
+$$
+
+The transformed Gaussian may be degenerate if $A$ does not
+have sufficient rank.
+
+### 4.2 Derivation of Mean
+
+$$
+\begin{aligned}
+\mathbb E[y]
+&=\mathbb E[Ax+b]\\
+&=A\mathbb E[x]+b\\
+&=A\mu+b
+\end{aligned}
+$$
+
+### 4.3 Derivation of Covariance
+
+$$
+y-\mu_y=A(x-\mu)
+$$
+
+Therefore,
+
+$$
+\begin{aligned}
+\operatorname{Cov}(y)
+&=\mathbb E[(y-\mu_y)(y-\mu_y)^\top]\\
+&=\mathbb E[A(x-\mu)(x-\mu)^\top A^\top]\\
+&=A\Sigma A^\top
+\end{aligned}
+$$
+
+### 4.4 Scalar Scaling
+
+$$
+\boxed{
+\operatorname{Cov}(ax)=a^2\operatorname{Cov}(x)
+}
+$$
+
+Example:
+
+$$
+x\sim\mathcal N(0,4)
+$$
+
+$$
+2x\sim\mathcal N(0,16)
+$$
+
+Variance scales with the square of the coefficient.
+
+### 4.5 Sum of Independent Gaussian Variables
+
+Given independent Gaussian variables:
+
+$$
+x\sim\mathcal N(\mu_x,\Sigma_x)
+$$
+
+$$
+z\sim\mathcal N(\mu_z,\Sigma_z)
+$$
+
+then
+
+$$
+\boxed{
+x+z\sim
+\mathcal N(\mu_x+\mu_z,\Sigma_x+\Sigma_z)
+}
+$$
+
+### 4.6 Linear Transformation with Gaussian Noise
+
+Given
+
+$$
+x\sim\mathcal N(\mu,\Sigma)
+$$
+
+$$
+\epsilon\sim\mathcal N(0,I),\qquad x\perp\epsilon
+$$
+
+and
+
+$$
+y=Ax+B\epsilon+b
+$$
+
+then
+
+$$
+\boxed{
+y\sim
+\mathcal N(A\mu+b,A\Sigma A^\top+BB^\top)
+}
+$$
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x$ | $d\times1$ |
+| $\Sigma$ | $d\times d$ |
+| $A$ | $m\times d$ |
+| $\epsilon$ | $r\times1$ |
+| $B$ | $m\times r$ |
+| $b$ | $m\times1$ |
+| $y$ | $m\times1$ |
+| $A\Sigma A^\top$ | $m\times m$ |
+| $BB^\top$ | $m\times m$ |
+
+---
+
+## 5. Joint, Conditional and Marginal Distributions
+
+### 5.1 Joint Distribution
+
+$$
+p(x,y)
+$$
+
+Describes the distribution and dependence of two random
+variables.
+
+### 5.2 Conditional Distribution
+
+$$
+\boxed{
+p(x\mid y)=\frac{p(x,y)}{p(y)}
+}
+$$
+
+### 5.3 Marginal Distribution
+
+For continuous variables:
+
+$$
+\boxed{
+p(x)=\int p(x,y)\,dy
+}
+$$
+
+For discrete variables:
+
+$$
+\boxed{
+p(x)=\sum_k p(x,c=k)
+}
+$$
+
+### 5.4 Bayes' Rule
+
+$$
+\boxed{
+p(x\mid y)
+=
+\frac{p(y\mid x)p(x)}{p(y)}
+}
+$$
+
+$$
+\text{Posterior}
+=
+\frac{\text{Likelihood}\times\text{Prior}}
+{\text{Evidence}}
+$$
+
+| Term | Expression |
+|---|---|
+| Prior | $p(x)$ |
+| Likelihood | $p(y\mid x)$ |
+| Evidence | $p(y)$ |
+| Posterior | $p(x\mid y)$ |
+
+### 5.5 Law of Total Probability
+
+$$
+p(x)=\sum_k p(x\mid c=k)p(c=k)
+$$
+
+Conditional version:
+
+$$
+\boxed{
+p(x\mid y)
+=
+\sum_k p(x\mid y,c=k)p(c=k\mid y)
+}
+$$
+
+### 5.6 Law of Total Expectation
+
+$$
+\mathbb E[x]
+=
+\mathbb E_y[\mathbb E[x\mid y]]
+$$
+
+Conditional version for a discrete latent variable:
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+\sum_k p(c=k\mid y)
+\mathbb E[x\mid y,c=k]
+}
+$$
+
+---
+
+## 6. Gaussian Mixture Model (GMM)
+
+### 6.1 Definition
+
+$$
+\boxed{
+p(x)=
+\sum_{k=1}^{K}
+\pi_k\mathcal N(x;\mu_k,\Sigma_k)
+}
+$$
+
+Constraints:
+
+$$
+\pi_k\geq0,\qquad
+\sum_{k=1}^{K}\pi_k=1
+$$
+
+### 6.2 Latent Component Variable
+
+Introduce a categorical latent variable:
+
+$$
+c\sim\operatorname{Categorical}(\pi_1,\ldots,\pi_K)
+$$
+
+$$
+p(c=k)=\pi_k
+$$
+
+$$
+x\mid c=k\sim\mathcal N(\mu_k,\Sigma_k)
+$$
+
+Marginalizing the component variable:
+
+$$
+p(x)
+=
+\sum_k p(x\mid c=k)p(c=k)
+$$
+
+### 6.3 Posterior Responsibility
+
+Using Bayes' rule:
+
+$$
+\boxed{
+w_k(x)
+=
+p(c=k\mid x)
+=
+\frac{
+\pi_k\mathcal N(x;\mu_k,\Sigma_k)
+}{
+\sum_j\pi_j\mathcal N(x;\mu_j,\Sigma_j)
+}
+}
+$$
+
+Properties:
+
+$$
+w_k(x)\geq0
+$$
+
+$$
+\sum_k w_k(x)=1
+$$
+
+### Prior vs. Posterior Weights
+
+| Property | Prior Weight | Posterior Responsibility |
+|---|---|---|
+| Notation | $\pi_k$ | $w_k(x)$ |
+| Definition | $p(c=k)$ | $p(c=k\mid x)$ |
+| Input-dependent | No | Yes |
+| Sum | 1 | 1 |
+| Meaning | Overall component probability | Component probability given an observation |
+
+### 6.4 Conditional Gaussian Mixture
+
+Given a joint Gaussian mixture,
+
+$$
+p(x,y)=\sum_k\pi_kp_k(x,y)
+$$
+
+conditioning on $y$ gives
+
+$$
+\boxed{
+p(x\mid y)
+=
+\sum_k
+w_k(y)p(x\mid y,c=k)
+}
+$$
+
+Since each component is jointly Gaussian,
+
+$$
+p(x\mid y)
+=
+\sum_k
+w_k(y)
+\mathcal N(x;\mu_{k\mid y},\Sigma_{k\mid y})
+$$
+
+A conditional Gaussian mixture remains a Gaussian mixture.
+
+Its weights and component means depend on the observation.
+Individual Gaussian conditional covariances are independent
+of the observed value.
+
+---
+
+## 7. Joint Gaussian Distribution
+
+### 7.1 General Form
+
+$$
+\boxed{
+\begin{bmatrix}
+x\\y
+\end{bmatrix}
+\sim
+\mathcal N
+\left(
+\begin{bmatrix}
+\mu_x\\\mu_y
+\end{bmatrix},
+\begin{bmatrix}
+\Sigma_{xx}&\Sigma_{xy}\\
+\Sigma_{yx}&\Sigma_{yy}
+\end{bmatrix}
+\right)
+}
+$$
+
+where
+
+$$
+\Sigma_{xx}=\operatorname{Cov}(x)
+$$
+
+$$
+\Sigma_{yy}=\operatorname{Cov}(y)
+$$
+
+$$
+\Sigma_{xy}=\operatorname{Cov}(x,y)
+$$
+
+$$
+\Sigma_{yx}=\Sigma_{xy}^\top
+$$
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x$ | $d\times1$ |
+| $y$ | $m\times1$ |
+| Joint vector | $(d+m)\times1$ |
+| Joint mean | $(d+m)\times1$ |
+| $\Sigma_{xx}$ | $d\times d$ |
+| $\Sigma_{xy}$ | $d\times m$ |
+| $\Sigma_{yx}$ | $m\times d$ |
+| $\Sigma_{yy}$ | $m\times m$ |
+| Joint covariance | $(d+m)\times(d+m)$ |
+
+### 7.2 Gaussian Marginalization
+
+Given the joint distribution above:
+
+$$
+x\sim\mathcal N(\mu_x,\Sigma_{xx})
+$$
+
+$$
+y\sim\mathcal N(\mu_y,\Sigma_{yy})
+$$
+
+Gaussian marginal distributions are obtained by selecting
+the corresponding mean vectors and covariance blocks.
+
+Individual Gaussian marginals do not necessarily imply
+a jointly Gaussian distribution.
+
+### 7.3 Constructing a Joint Gaussian
+
+Given
+
+$$
+x\sim\mathcal N(\mu_x,\Sigma_x)
+$$
+
+$$
+\epsilon\sim\mathcal N(0,R)
+$$
+
+$$
+x\perp\epsilon
+$$
+
+and
+
+$$
+y=Ax+b+\epsilon
+$$
+
+we can write
+
+$$
+\begin{bmatrix}
+x\\y
+\end{bmatrix}
+=
+\begin{bmatrix}
+I&0\\
+A&I
+\end{bmatrix}
+\begin{bmatrix}
+x\\\epsilon
+\end{bmatrix}
++
+\begin{bmatrix}
+0\\b
+\end{bmatrix}
+$$
+
+Since independent Gaussian variables are jointly Gaussian,
+the affine transformation is also jointly Gaussian.
+
+The mean and covariance of $y$ are
+
+$$
+\mu_y=A\mu_x+b
+$$
+
+$$
+\Sigma_{yy}=A\Sigma_xA^\top+R
+$$
+
+The cross-covariance is
+
+$$
+\begin{aligned}
+\operatorname{Cov}(x,y)
+&=\operatorname{Cov}(x,Ax+b+\epsilon)\\
+&=\Sigma_xA^\top
+\end{aligned}
+$$
+
+Therefore,
+
+$$
+\boxed{
+\begin{bmatrix}
+x\\y
+\end{bmatrix}
+\sim
+\mathcal N
+\left(
+\begin{bmatrix}
+\mu_x\\A\mu_x+b
+\end{bmatrix},
+\begin{bmatrix}
+\Sigma_x&\Sigma_xA^\top\\
+A\Sigma_x&A\Sigma_xA^\top+R
+\end{bmatrix}
+\right)
+}
+$$
+
+---
+
+## 8. Gaussian Conditioning
+
+### 8.1 Conditional Gaussian Formula
+
+Given jointly Gaussian random variables:
+
+$$
+\begin{bmatrix}
+x\\y
+\end{bmatrix}
+\sim
+\mathcal N
+\left(
+\begin{bmatrix}
+\mu_x\\\mu_y
+\end{bmatrix},
+\begin{bmatrix}
+\Sigma_{xx}&\Sigma_{xy}\\
+\Sigma_{yx}&\Sigma_{yy}
+\end{bmatrix}
+\right)
+$$
+
+with invertible $\Sigma_{yy}$:
+
+$$
+x\mid y\sim
+\mathcal N(\mu_{x\mid y},\Sigma_{x\mid y})
+$$
+
+Conditional mean:
+
+$$
+\boxed{
+\mu_{x\mid y}
+=
+\mu_x+
+\Sigma_{xy}\Sigma_{yy}^{-1}(y-\mu_y)
+}
+$$
+
+Conditional covariance:
+
+$$
+\boxed{
+\Sigma_{x\mid y}
+=
+\Sigma_{xx}
+-
+\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}
+}
+$$
+
+### 8.2 Interpretation
+
+Define the gain matrix:
+
+$$
+G=\Sigma_{xy}\Sigma_{yy}^{-1}
+$$
+
+Then
+
+$$
+\mu_{x\mid y}=\mu_x+G(y-\mu_y)
+$$
+
+$$
+\Sigma_{x\mid y}=\Sigma_{xx}-G\Sigma_{yx}
+$$
+
+| Quantity | Interpretation |
+|---|---|
+| $\mu_x$ | Prior estimate |
+| $y-\mu_y$ | Innovation |
+| $G$ | Correction gain |
+| $\mu_{x\mid y}$ | Posterior estimate |
+| $\Sigma_{xx}$ | Prior uncertainty |
+| $\Sigma_{x\mid y}$ | Posterior uncertainty |
+
+For jointly Gaussian variables:
+
+$$
+\Sigma_{x\mid y}\preceq\Sigma_{xx}
+$$
+
+The conditional mean depends on the observation $y$.
+The conditional covariance does not depend on its value.
+
+### 8.3 Derivation of Gaussian Conditioning
+
+Define
+
+$$
+G=\Sigma_{xy}\Sigma_{yy}^{-1}
+$$
+
+and
+
+$$
+u=x-\mu_x-G(y-\mu_y)
+$$
+
+Since $u$ is an affine transformation of jointly Gaussian
+variables, $u$ and $y$ are jointly Gaussian.
+
+Mean:
+
+$$
+\mathbb E[u]=0
+$$
+
+Cross-covariance:
+
+$$
+\begin{aligned}
+\operatorname{Cov}(u,y)
+&=\Sigma_{xy}-G\Sigma_{yy}\\
+&=\Sigma_{xy}
+-\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yy}\\
+&=0
+\end{aligned}
+$$
+
+Joint Gaussianity and zero cross-covariance imply
+
+$$
+u\perp y
+$$
+
+Since
+
+$$
+x=\mu_x+G(y-\mu_y)+u
+$$
+
+the conditional mean is
+
+$$
+\begin{aligned}
+\mathbb E[x\mid y]
+&=\mu_x+G(y-\mu_y)+\mathbb E[u\mid y]\\
+&=\mu_x+G(y-\mu_y)
+\end{aligned}
+$$
+
+The conditional covariance is
+
+$$
+\operatorname{Cov}(x\mid y)
+=
+\operatorname{Cov}(u)
+$$
+
+Expanding:
+
+$$
+\begin{aligned}
+\operatorname{Cov}(u)
+={}&\Sigma_{xx}
+-G\Sigma_{yx}
+-\Sigma_{xy}G^\top\\
+&+G\Sigma_{yy}G^\top
+\end{aligned}
+$$
+
+Using
+
+$$
+G\Sigma_{yy}=\Sigma_{xy}
+$$
+
+gives
+
+$$
+\operatorname{Cov}(u)
+=
+\Sigma_{xx}-G\Sigma_{yx}
+$$
+
+Therefore,
+
+$$
+\boxed{
+\operatorname{Cov}(x\mid y)
+=
+\Sigma_{xx}
+-\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}
+}
+$$
+
+### 8.4 Matrix Dimensions
+
+| Expression | Dimension |
+|---|---|
+| $\Sigma_{xy}$ | $d\times m$ |
+| $\Sigma_{yy}^{-1}$ | $m\times m$ |
+| $\Sigma_{yx}$ | $m\times d$ |
+| $G$ | $d\times m$ |
+| $y-\mu_y$ | $m\times1$ |
+| $\mu_{x\mid y}$ | $d\times1$ |
+| $\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}$ | $d\times d$ |
+| $\Sigma_{x\mid y}$ | $d\times d$ |
+
+### 8.5 Connection to Kalman Filter
+
+For
+
+$$
+x\sim\mathcal N(\mu,P)
+$$
+
+$$
+y=Hx+\epsilon,\qquad
+\epsilon\sim\mathcal N(0,R)
+$$
+
+the Kalman gain is
+
+$$
+K=PH^\top(HPH^\top+R)^{-1}
+$$
+
+The measurement update is
+
+$$
+\mu_{\mathrm{post}}
+=
+\mu+K(y-H\mu)
+$$
+
+$$
+P_{\mathrm{post}}=P-KHP
+$$
+
+The Kalman measurement update is an application of
+Gaussian conditioning.
+
+---
+
+## 9. Conditional Expectation and Bayesian Estimation
+
+### 9.1 Conditional Expectation
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+\int xp(x\mid y)\,dx
+}
+$$
+
+### 9.2 MMSE Estimation
+
+The minimum mean squared error estimator solves
+
+$$
+f^*
+=
+\arg\min_f
+\mathbb E[\|x-f(y)\|^2]
+$$
+
+Its optimal solution is
+
+$$
+\boxed{
+f^*(y)=\mathbb E[x\mid y]
+}
+$$
+
+### 9.3 Derivation of MMSE
+
+Define
+
+$$
+m=\mathbb E[x\mid y]
+$$
+
+Then
+
+$$
+x-\hat x=(x-m)+(m-\hat x)
+$$
+
+Taking conditional expectation:
+
+$$
+\begin{aligned}
+\mathbb E[\|x-\hat x\|^2\mid y]
+={}&\mathbb E[\|x-m\|^2\mid y]\\
+&+\|m-\hat x\|^2\\
+&+2\mathbb E[(x-m)^\top(m-\hat x)\mid y]
+\end{aligned}
+$$
+
+Since
+
+$$
+\mathbb E[x-m\mid y]=0
+$$
+
+the cross term vanishes.
+
+Therefore,
+
+$$
+\boxed{
+\mathbb E[\|x-\hat x\|^2\mid y]
+=
+\mathbb E[\|x-m\|^2\mid y]
++
+\|m-\hat x\|^2
+}
+$$
+
+The minimum is attained at
+
+$$
+\hat x=m=\mathbb E[x\mid y]
+$$
+
+### 9.4 MAP Estimation
+
+$$
+\boxed{
+\hat x_{\mathrm{MAP}}
+=
+\arg\max_x p(x\mid y)
+}
+$$
+
+### Bayesian Estimation Comparison
+
+| Method | Formula | Objective |
+|---|---|---|
+| MMSE | $\mathbb E[x\mid y]$ | Minimize expected squared error |
+| MAP | $\arg\max_x p(x\mid y)$ | Maximize posterior density |
+| Posterior sampling | $x\sim p(x\mid y)$ | Generate samples from the posterior |
+
+For a nondegenerate Gaussian posterior:
+
+$$
+\hat x_{\mathrm{MMSE}}=\hat x_{\mathrm{MAP}}
+$$
+
+For general distributions, they may differ.
+
+A posterior mean is not necessarily a high-density sample.
+
+---
+
+## 10. Mathematical Foundations — Formula Summary
+
+| Concept | Formula |
+|---|---|
+| Expectation | $\mu=\mathbb E[x]$ |
+| Covariance | $\Sigma=\mathbb E[(x-\mu)(x-\mu)^\top]$ |
+| Cross-covariance | $\Sigma_{xy}=\mathbb E[(x-\mu_x)(y-\mu_y)^\top]$ |
+| Zero-mean covariance | $\Sigma=\mathbb E[xx^\top]$ |
+| Affine mean | $\mathbb E[Ax+b]=A\mu+b$ |
+| Affine covariance | $\operatorname{Cov}(Ax+b)=A\Sigma A^\top$ |
+| Scalar scaling | $\operatorname{Cov}(ax)=a^2\Sigma$ |
+| Independent sum | $\operatorname{Cov}(x+y)=\Sigma_x+\Sigma_y$ |
+| Cross-covariance transformation | $\operatorname{Cov}(Ax,By)=A\Sigma_{xy}B^\top$ |
+| Bayes' rule | $p(x\mid y)=p(y\mid x)p(x)/p(y)$ |
+| GMM | $p(x)=\sum_k\pi_k\mathcal N(x;\mu_k,\Sigma_k)$ |
+| Responsibility | $w_k(x)=\pi_kp_k(x)/\sum_j\pi_jp_j(x)$ |
+| Conditional mean | $\mu_x+\Sigma_{xy}\Sigma_{yy}^{-1}(y-\mu_y)$ |
+| Conditional covariance | $\Sigma_{xx}-\Sigma_{xy}\Sigma_{yy}^{-1}\Sigma_{yx}$ |
+| Schur complement | $A-BD^{-1}C$ |
+| Total expectation | $\mathbb E[x\mid y]=\sum_kw_k(y)\mathbb E[x\mid y,c=k]$ |
+| MMSE | $\hat x=\mathbb E[x\mid y]$ |
+| Quadratic gradient | $\nabla_x(x^\top Ax)=(A+A^\top)x$ |
+
+---
+
+# Part II — Diffusion with a Mixture of Gaussians
+
+# Problem 2(a) — Forward Marginal Distribution
+
+## 11. Keywords
+
+- Forward Diffusion
+- Forward Transition
+- Markov Process
+- Noise Schedule
+- Cumulative Alpha
+- Closed-Form Forward Diffusion
+- Forward Marginal Distribution
+- Posterior Responsibility
+- Covariance Recursion
+
+---
+
+## 12. Forward and Reverse Diffusion
+
+### Forward Process
+
+$$
+x_0\rightarrow x_1\rightarrow\cdots\rightarrow x_T
+$$
+
+The forward process gradually attenuates the signal and
+adds Gaussian noise.
+
+### Reverse Process
+
+$$
+x_T\rightarrow x_{T-1}\rightarrow\cdots\rightarrow x_0
+$$
+
+The reverse process gradually generates data from noise.
+
+### Important Probability Distributions
+
+| Distribution | Meaning |
+|---|---|
+| $p(x_0)$ | Original data distribution |
+| $q(x_t\mid x_{t-1})$ | Single-step forward transition |
+| $q(x_t\mid x_0)$ | Cumulative forward transition |
+| $q(x_t)$ | Forward marginal distribution |
+| $q(x_{t-1}\mid x_t)$ | Exact reverse transition |
+| $p_\theta(x_{t-1}\mid x_t)$ | Learned reverse transition |
+
+The forward transition is predefined.
+
+The exact reverse transition depends on the data distribution
+and is generally intractable.
+
+---
+
+## 13. Single-Step Forward Diffusion
+
+### Probability Distribution
+
+$$
+\boxed{
+q(x_t\mid x_{t-1})
+=
+\mathcal N
+\left(
+x_t;
+\sqrt{\alpha_t}x_{t-1},
+(1-\alpha_t)I
+\right)
+}
+$$
+
+### Sampling Representation
+
+$$
+\boxed{
+x_t=
+\sqrt{\alpha_t}x_{t-1}
++
+\sqrt{1-\alpha_t}\epsilon_t
+}
+$$
+
+where
+
+$$
+\epsilon_t\sim\mathcal N(0,I)
+$$
+
+The noise is independent of the previous states.
+
+### Noise Schedule
+
+$$
+\boxed{\alpha_t=1-\beta_t}
+$$
+
+$$
+\boxed{
+\bar\alpha_t=\prod_{s=1}^{t}\alpha_s
+}
+$$
+
+$$
+\bar\alpha_0=1
+$$
+
+### Parameter Definitions
+
+| Parameter | Meaning |
+|---|---|
+| $\beta_t$ | Single-step noise variance coefficient |
+| $\alpha_t$ | Single-step signal retention coefficient |
+| $\sqrt{\alpha_t}$ | Signal scaling coefficient |
+| $\sqrt{\beta_t}$ | Noise scaling coefficient |
+| $\bar\alpha_t$ | Cumulative signal retention coefficient |
+| $1-\bar\alpha_t$ | Cumulative noise variance coefficient |
+
+The square roots are required because covariance scales
+with the square of the coefficient.
+
+---
+
+## 14. Closed-Form Forward Diffusion
+
+The cumulative forward transition is
+
+$$
+\boxed{
+q(x_t\mid x_0)
+=
+\mathcal N
+\left(
+x_t;
+\sqrt{\bar\alpha_t}x_0,
+(1-\bar\alpha_t)I
+\right)
+}
+$$
+
+Equivalent sampling representation:
+
+$$
+\boxed{
+x_t=
+\sqrt{\bar\alpha_t}x_0
++
+\sqrt{1-\bar\alpha_t}\epsilon
+}
+$$
+
+where
+
+$$
+\epsilon\sim\mathcal N(0,I)
+$$
+
+### 14.1 Two-Step Derivation
+
+$$
+x_1=
+\sqrt{\alpha_1}x_0+
+\sqrt{1-\alpha_1}\epsilon_1
+$$
+
+$$
+x_2=
+\sqrt{\alpha_2}x_1+
+\sqrt{1-\alpha_2}\epsilon_2
+$$
+
+Substitute $x_1$:
+
+$$
+\begin{aligned}
+x_2
+={}&\sqrt{\alpha_1\alpha_2}x_0\\
+&+\sqrt{\alpha_2(1-\alpha_1)}\epsilon_1\\
+&+\sqrt{1-\alpha_2}\epsilon_2
+\end{aligned}
+$$
+
+The two independent noise terms have combined covariance
+
+$$
+\begin{aligned}
+\Sigma_{\mathrm{noise}}
+&=\alpha_2(1-\alpha_1)I+(1-\alpha_2)I\\
+&=(1-\alpha_1\alpha_2)I
+\end{aligned}
+$$
+
+Therefore,
+
+$$
+x_2=
+\sqrt{\bar\alpha_2}x_0+
+\sqrt{1-\bar\alpha_2}\epsilon
+$$
+
+where
+
+$$
+\bar\alpha_2=\alpha_1\alpha_2
+$$
+
+The same argument extends to arbitrary $t$ by induction.
+
+### 14.2 Signal and Noise Evolution
+
+| Stage | $\bar\alpha_t$ | Signal Scaling | Noise Scaling |
+|---|---:|---:|---:|
+| Beginning | 1 | 1 | 0 |
+| Early | 0.9 | 0.949 | 0.316 |
+| Intermediate | 0.5 | 0.707 | 0.707 |
+| Late | 0.1 | 0.316 | 0.949 |
+| Near pure noise | 0.01 | 0.1 | 0.995 |
+| Limit | 0 | 0 | 1 |
+
+If the schedule satisfies $\bar\alpha_t\to0$:
+
+$$
+x_t\rightarrow\mathcal N(0,I)
+$$
+
+in distribution.
+
+### 14.3 Importance
+
+Closed-form diffusion allows direct sampling of $x_t$
+without performing all preceding diffusion steps.
+
+This is essential for efficient DDPM training.
+
+---
+
+## 15. Diffusion with a Gaussian Mixture Prior
+
+### 15.1 Original Data Distribution
+
+Problem 2 assumes
+
+$$
+\boxed{
+p(x_0)
+=
+\sum_{k=1}^{K}
+\pi_k\mathcal N(x_0;0,\Sigma_k)
+}
+$$
+
+where
+
+$$
+\Sigma_k\succ0
+$$
+
+$$
+\pi_k\geq0,\qquad
+\sum_k\pi_k=1
+$$
+
+Introduce the latent component variable:
+
+$$
+p(c=k)=\pi_k
+$$
+
+$$
+x_0\mid c=k\sim\mathcal N(0,\Sigma_k)
+$$
+
+All components have zero mean but may have different
+covariance matrices.
+
+### 15.2 Component Covariance after Diffusion
+
+The target result is
+
+$$
+\boxed{
+C_{k,t}
+=
+\bar\alpha_t\Sigma_k+
+(1-\bar\alpha_t)I
+}
+$$
+
+Therefore,
+
+$$
+\boxed{
+x_t\mid c=k
+\sim\mathcal N(0,C_{k,t})
+}
+$$
+
+Relevant mathematical tools:
+
+- Gaussian affine transformation.
+- Addition of independent Gaussian variables.
+- Covariance transformation.
+
+### 15.3 Forward Marginal Distribution
+
+After marginalizing the latent component variable:
+
+$$
+\boxed{
+q(x_t)
+=
+\sum_{k=1}^{K}
+\pi_k\mathcal N(x_t;0,C_{k,t})
+}
+$$
+
+The forward marginal remains a Gaussian mixture.
+
+The original mixture weights $\pi_k$ remain unchanged.
+Only the component covariance matrices evolve.
+
+### 15.4 Posterior Responsibility
+
+The posterior component probability is
+
+$$
+\boxed{
+w_{k,t}(x_t)
+=
+p(c=k\mid x_t)
+=
+\frac{
+\pi_k\mathcal N(x_t;0,C_{k,t})
+}{
+\sum_{j=1}^{K}
+\pi_j\mathcal N(x_t;0,C_{j,t})
+}
+}
+$$
+
+The prior weights remain fixed, but posterior weights depend
+on both the observation and diffusion time.
+
+### 15.5 Covariance Recursion
+
+The required recursive form is
+
+$$
+\boxed{
+C_{k,t}
+=
+\alpha_tC_{k,t-1}
++
+(1-\alpha_t)I
+}
+$$
+
+with initial condition
+
+$$
+C_{k,0}=\Sigma_k
+$$
+
+### Closed Form vs. Recursive Form
+
+| Expression | Purpose |
+|---|---|
+| $C_{k,t}=\bar\alpha_t\Sigma_k+(1-\bar\alpha_t)I$ | Direct computation from initial covariance |
+| $C_{k,t}=\alpha_tC_{k,t-1}+(1-\alpha_t)I$ | One-step covariance propagation |
+
+### 15.6 Covariance Evolution
+
+The covariance can also be written as
+
+$$
+C_{k,t}=I+\bar\alpha_t(\Sigma_k-I)
+$$
+
+Suppose
+
+$$
+\Sigma_k=U_k\Lambda_kU_k^\top
+$$
+
+Then
+
+$$
+C_{k,t}
+=
+U_k
+[\bar\alpha_t\Lambda_k+(1-\bar\alpha_t)I]
+U_k^\top
+$$
+
+Each eigenvalue evolves according to
+
+$$
+\lambda_{i,t}
+=
+1+\bar\alpha_t(\lambda_{i,0}-1)
+$$
+
+Consequently:
+
+- Eigenvalues greater than 1 decrease toward 1.
+- Eigenvalues smaller than 1 increase toward 1.
+- Eigenvalues equal to 1 remain unchanged.
+- The eigenvectors can be kept unchanged.
+
+As $\bar\alpha_t\to0$:
+
+$$
+\boxed{
+C_{k,t}\to I
+}
+$$
+
+All mixture components converge to the same standard
+Gaussian distribution.
+
+Consequently, for a fixed observation,
+
+$$
+w_{k,t}(x_t)\to\pi_k
+$$
+
+The observation becomes uninformative about the original
+component.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x_0,x_t,\epsilon$ | $d\times1$ |
+| $\Sigma_k$ | $d\times d$ |
+| $C_{k,t}$ | $d\times d$ |
+| $I$ | $d\times d$ |
+| $\alpha_t,\beta_t,\bar\alpha_t$ | Scalar |
+| $\pi_k$ | Scalar |
+| $w_{k,t}(x_t)$ | Scalar |
+| $q(x_t)$ | Scalar |
+
+### Problem 2(a) — Essential Results
+
+$$
+\boxed{
+C_{k,t}=
+\bar\alpha_t\Sigma_k+(1-\bar\alpha_t)I
+}
+$$
+
+$$
+\boxed{
+q(x_t)=\sum_k\pi_k\mathcal N(x_t;0,C_{k,t})
+}
+$$
+
+$$
+\boxed{
+w_{k,t}(x_t)=
+\frac{\pi_k\mathcal N(x_t;0,C_{k,t})}
+{\sum_j\pi_j\mathcal N(x_t;0,C_{j,t})}
+}
+$$
+
+$$
+\boxed{
+C_{k,t}=\alpha_tC_{k,t-1}+(1-\alpha_t)I
+}
+$$
+
+---
+
+# Problem 2(b) — Exact Reverse Transition
+
+## 16. Keywords
+
+- Exact Reverse Transition
+- Joint Gaussian Mixture
+- Cross-Covariance
+- Gaussian Conditioning
+- Conditional Mean
+- Conditional Covariance
+- Posterior Mixture Weights
+- Gaussian Approximation
+
+---
+
+## 17. Forward vs. Reverse Transition
+
+Forward transition:
+
+$$
+q(x_t\mid x_{t-1})
+$$
+
+Exact reverse transition:
+
+$$
+\boxed{
+q(x_{t-1}\mid x_t)
+=
+\frac{
+q(x_t\mid x_{t-1})q(x_{t-1})
+}{
+q(x_t)
+}
+}
+$$
+
+The forward transition is known, but the reverse transition
+also requires the data marginals.
+
+Therefore, reversing diffusion is a Bayesian inference
+problem, not a deterministic algebraic inversion.
+
+---
+
+## 18. Joint Distribution of Consecutive States
+
+Conditioned on component $k$:
+
+$$
+x_{t-1}\mid c=k
+\sim\mathcal N(0,C_{k,t-1})
+$$
+
+$$
+x_t\mid c=k
+\sim\mathcal N(0,C_{k,t})
+$$
+
+The forward relationship is
+
+$$
+x_t=
+\sqrt{\alpha_t}x_{t-1}
++
+\sqrt{1-\alpha_t}\epsilon_t
+$$
+
+The relevant cross-covariance structure is
+
+$$
+\operatorname{Cov}(x,y)=\Sigma_xA^\top
+$$
+
+For the diffusion transition,
+
+$$
+A=\sqrt{\alpha_t}I
+$$
+
+Hence, the required joint covariance blocks are
+
+| Block | Expression |
+|---|---|
+| $\Sigma_{xx}$ | $C_{k,t-1}$ |
+| $\Sigma_{xy}$ | $\sqrt{\alpha_t}C_{k,t-1}$ |
+| $\Sigma_{yx}$ | $\sqrt{\alpha_t}C_{k,t-1}$ |
+| $\Sigma_{yy}$ | $C_{k,t}$ |
+
+The target joint distribution is
+
+$$
+\boxed{
+q(x_{t-1},x_t)
+=
+\sum_{k=1}^{K}
+\pi_k\mathcal N
+\left(
+\begin{bmatrix}
+x_{t-1}\\x_t
+\end{bmatrix};
+\begin{bmatrix}
+0\\0
+\end{bmatrix},
+\begin{bmatrix}
+C_{k,t-1}&\sqrt{\alpha_t}C_{k,t-1}\\
+\sqrt{\alpha_t}C_{k,t-1}&C_{k,t}
+\end{bmatrix}
+\right)
+}
+$$
+
+---
+
+## 19. Component Reverse Transition
+
+Each component is jointly Gaussian.
+
+Therefore, its reverse transition is Gaussian:
+
+$$
+q(x_{t-1}\mid x_t,c=k)
+=
+\mathcal N(x_{t-1};m_{k,t},S_{k,t})
+$$
+
+### Conditional Mean
+
+Apply the general Gaussian conditioning formula:
+
+$$
+\mu_{x\mid y}
+=
+\mu_x+
+\Sigma_{xy}\Sigma_{yy}^{-1}(y-\mu_y)
+$$
+
+The target result is
+
+$$
+\boxed{
+m_{k,t}
+=
+\sqrt{\alpha_t}
+C_{k,t-1}C_{k,t}^{-1}x_t
+}
+$$
+
+### Conditional Covariance
+
+The unsimplified Gaussian conditioning expression is
+
+$$
+S_{k,t}
+=
+C_{k,t-1}
+-
+\alpha_t
+C_{k,t-1}
+C_{k,t}^{-1}
+C_{k,t-1}
+$$
+
+The required simplified result is
+
+$$
+\boxed{
+S_{k,t}
+=
+(1-\alpha_t)
+C_{k,t-1}C_{k,t}^{-1}
+}
+$$
+
+The relevant matrix identity is
+
+$$
+I-aAB^{-1}=bB^{-1}
+$$
+
+with
+
+$$
+A=C_{k,t-1}
+$$
+
+$$
+B=C_{k,t}
+$$
+
+$$
+a=\alpha_t,\qquad b=1-\alpha_t
+$$
+
+The detailed homework proof is reserved for Round 2.
+
+---
+
+## 20. Exact Reverse Gaussian Mixture
+
+Conditioning on $x_t$ changes the mixture weights from
+prior probabilities to posterior responsibilities.
+
+The required result is
+
+$$
+\boxed{
+q(x_{t-1}\mid x_t)
+=
+\sum_{k=1}^{K}
+w_{k,t}(x_t)
+\mathcal N(x_{t-1};m_{k,t},S_{k,t})
+}
+$$
+
+with
+
+$$
+m_{k,t}
+=
+\sqrt{\alpha_t}
+C_{k,t-1}C_{k,t}^{-1}x_t
+$$
+
+$$
+S_{k,t}
+=
+(1-\alpha_t)
+C_{k,t-1}C_{k,t}^{-1}
+$$
+
+### Interpretation
+
+| Quantity | Meaning |
+|---|---|
+| $w_{k,t}(x_t)$ | Probability of component $k$ given current sample |
+| $m_{k,t}$ | Estimated previous state within component $k$ |
+| $S_{k,t}$ | Remaining uncertainty within component $k$ |
+
+### Conceptual Workflow
+
+1. Fix the latent Gaussian component.
+2. Construct the joint Gaussian distribution.
+3. Apply Gaussian conditioning.
+4. Combine the conditional Gaussians using posterior weights.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x_{t-1},x_t$ | $d\times1$ |
+| Joint random vector | $2d\times1$ |
+| $C_{k,t-1},C_{k,t}$ | $d\times d$ |
+| $C_{k,t}^{-1}$ | $d\times d$ |
+| Cross-covariance | $d\times d$ |
+| Joint covariance | $2d\times2d$ |
+| $m_{k,t}$ | $d\times1$ |
+| $S_{k,t}$ | $d\times d$ |
+| $w_{k,t}(x_t)$ | Scalar |
+
+---
+
+## 21. Exact Reverse Transition vs. DDPM Approximation
+
+The exact reverse transition is generally not Gaussian.
+
+For a Gaussian mixture prior, it is a Gaussian mixture.
+
+Standard DDPM commonly parameterizes the reverse transition as
+
+$$
+p_\theta(x_{t-1}\mid x_t)
+=
+\mathcal N
+\left(
+x_{t-1};
+\mu_\theta(x_t,t),
+\Sigma_\theta(x_t,t)
+\right)
+$$
+
+| Property | Exact Reverse | Learned DDPM Reverse |
+|---|---|---|
+| Notation | $q(x_{t-1}\mid x_t)$ | $p_\theta(x_{t-1}\mid x_t)$ |
+| Distribution | Generally complex | Usually Gaussian |
+| Parameters | Determined by data distribution | Model-predicted or predefined |
+| Availability | Generally intractable | Computable after training |
+| Role | True reverse process | Approximate reverse process |
+
+For sufficiently small diffusion steps and suitable
+regularity conditions, the reverse transition can be
+approximated locally by a Gaussian.
+
+---
+
+# Problem 2(c) — Score Function
+
+## 22. Keywords
+
+- Score Function
+- Log Probability Density
+- Gaussian Score
+- Mixture Score
+- Gradient Field
+- Normalization Constant
+- Precision Matrix
+- Score-Based Generative Models
+
+---
+
+## 23. Score Function
+
+### 23.1 Definition
+
+$$
+\boxed{
+s(x)=\nabla_x\log p(x)
+}
+$$
+
+Using the chain rule:
+
+$$
+\boxed{
+s(x)=\frac{\nabla_xp(x)}{p(x)}
+}
+$$
+
+Equivalently,
+
+$$
+\boxed{
+\nabla_xp(x)=p(x)s(x)
+}
+$$
+
+The score is a vector pointing in the direction of the
+steepest local increase in log probability density.
+
+It is not a probability or a probability density.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x$ | $d\times1$ |
+| $p(x)$ | Scalar |
+| $\log p(x)$ | Scalar |
+| $\nabla_xp(x)$ | $d\times1$ |
+| $s(x)$ | $d\times1$ |
+
+### 23.2 Why Use the Log Density?
+
+Suppose
+
+$$
+p(x)=\frac{f(x)}{Z}
+$$
+
+where
+
+$$
+Z=\int f(x)\,dx
+$$
+
+Then
+
+$$
+\begin{aligned}
+\nabla_x\log p(x)
+&=\nabla_x[\log f(x)-\log Z]\\
+&=\nabla_x\log f(x)
+\end{aligned}
+$$
+
+Thus,
+
+$$
+\boxed{
+\nabla_x\log p(x)=\nabla_x\log f(x)
+}
+$$
+
+The normalization constant disappears because it does not
+depend on $x$.
+
+Advantages:
+
+- Eliminates the global normalization constant.
+- Simplifies differentiation of exponential densities.
+- Removes the density-dependent multiplicative scaling
+  present in $\nabla_xp(x)$.
+
+### 23.3 Score vs. Gradient Descent
+
+| Property | Gradient Descent | Score-Based Gradient Ascent |
+|---|---|---|
+| Objective | $L(W)$ | $\log p(x)$ |
+| Updated variable | Parameters $W$ | Sample $x$ |
+| Direction | $-\nabla_W L$ | $+\nabla_x\log p(x)$ |
+| Purpose | Decrease loss | Increase density locally |
+
+A stationary score does not necessarily indicate a density
+maximum. It may also indicate a minimum or saddle point.
+
+---
+
+## 24. Gaussian Score
+
+Given
+
+$$
+p(x)=\mathcal N(x;\mu,\Sigma)
+$$
+
+take the logarithm:
+
+$$
+\log p(x)
+=
+-\frac d2\log(2\pi)
+-\frac12\log|\Sigma|
+-\frac12(x-\mu)^\top\Sigma^{-1}(x-\mu)
+$$
+
+The first two terms are constant with respect to $x$.
+
+Therefore,
+
+$$
+\nabla_x\log p(x)
+=
+-\frac12
+\nabla_x[(x-\mu)^\top\Sigma^{-1}(x-\mu)]
+$$
+
+Since $\Sigma^{-1}$ is symmetric,
+
+$$
+\nabla_x[(x-\mu)^\top\Sigma^{-1}(x-\mu)]
+=
+2\Sigma^{-1}(x-\mu)
+$$
+
+Hence,
+
+$$
+\boxed{
+s(x)=-\Sigma^{-1}(x-\mu)
+}
+$$
+
+### Special Cases
+
+| Gaussian Distribution | Score |
+|---|---|
+| $\mathcal N(\mu,\sigma^2)$ | $-(x-\mu)/\sigma^2$ |
+| $\mathcal N(0,1)$ | $-x$ |
+| $\mathcal N(\mu,I)$ | $-(x-\mu)$ |
+| $\mathcal N(0,\sigma^2I)$ | $-x/\sigma^2$ |
+| $\mathcal N(\mu,\Sigma)$ | $-\Sigma^{-1}(x-\mu)$ |
+| $\mathcal N(0,\Sigma)$ | $-\Sigma^{-1}x$ |
+
+The precision matrix determines the direction and magnitude
+of the Gaussian score.
+
+For the same displacement, smaller variance along a principal
+direction produces a larger score magnitude along that direction.
+
+---
+
+## 25. Gaussian Mixture Score
+
+Given
+
+$$
+p(x)=\sum_k\pi_kp_k(x)
+$$
+
+define component scores:
+
+$$
+s_k(x)=\nabla_x\log p_k(x)
+$$
+
+The general mixture score identity is
+
+$$
+\boxed{
+s(x)=\sum_k w_k(x)s_k(x)
+}
+$$
+
+where
+
+$$
+w_k(x)=
+\frac{\pi_kp_k(x)}
+{\sum_j\pi_jp_j(x)}
+$$
+
+Relevant identities for the homework derivation:
+
+$$
+\nabla_x\log p(x)
+=
+\frac{\nabla_xp(x)}{p(x)}
+$$
+
+$$
+\nabla_xp_k(x)=p_k(x)s_k(x)
+$$
+
+$$
+\nabla_x\sum_k\pi_kp_k(x)
+=
+\sum_k\pi_k\nabla_xp_k(x)
+$$
+
+Important:
+
+$$
+s(x)\neq\sum_k\pi_ks_k(x)
+$$
+
+in general.
+
+The mixture score uses posterior responsibilities,
+not fixed prior mixture weights.
+
+### Why Posterior Weights?
+
+A component that is more likely to have generated the
+current observation should contribute more strongly to
+its score.
+
+---
+
+## 26. Score of the Diffused Gaussian Mixture
+
+From Problem 2(a):
+
+$$
+q(x_t)=
+\sum_k\pi_k\mathcal N(x_t;0,C_{k,t})
+$$
+
+Each component score is
+
+$$
+s_{k,t}(x_t)
+=
+-C_{k,t}^{-1}x_t
+$$
+
+The required result is
+
+$$
+\boxed{
+s_t(x_t)
+=
+\nabla_{x_t}\log q(x_t)
+=
+-\sum_{k=1}^{K}
+w_{k,t}(x_t)C_{k,t}^{-1}x_t
+}
+$$
+
+### Effective Precision Matrix
+
+Define
+
+$$
+\Lambda_{\mathrm{eff}}(x_t,t)
+=
+\sum_k w_{k,t}(x_t)C_{k,t}^{-1}
+$$
+
+Then
+
+$$
+s_t(x_t)
+=
+-\Lambda_{\mathrm{eff}}(x_t,t)x_t
+$$
+
+Each component score is linear in $x_t$.
+
+However, the mixture score is generally nonlinear because
+the posterior weights depend on $x_t$.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x_t$ | $d\times1$ |
+| $C_{k,t}$ | $d\times d$ |
+| $C_{k,t}^{-1}$ | $d\times d$ |
+| $w_{k,t}(x_t)$ | Scalar |
+| $s_{k,t}(x_t)$ | $d\times1$ |
+| $\Lambda_{\mathrm{eff}}(x_t,t)$ | $d\times d$ |
+| $s_t(x_t)$ | $d\times1$ |
+
+---
+
+## 27. Score Evolution during Diffusion
+
+At $t=0$:
+
+$$
+C_{k,0}=\Sigma_k
+$$
+
+$$
+s_0(x_0)
+=
+-\sum_k w_{k,0}(x_0)\Sigma_k^{-1}x_0
+$$
+
+As $\bar\alpha_t\to0$:
+
+$$
+C_{k,t}\to I
+$$
+
+$$
+q(x_t)\to\mathcal N(0,I)
+$$
+
+For a fixed $x_t$,
+
+$$
+\begin{aligned}
+s_t(x_t)
+&\to-\sum_k w_{k,t}(x_t)x_t\\
+&=-x_t
+\end{aligned}
+$$
+
+Therefore,
+
+$$
+\boxed{s_t(x_t)\to-x_t}
+$$
+
+| Stage | Component Covariance | Score |
+|---|---|---|
+| $t=0$ | $\Sigma_k$ | Original data score |
+| Intermediate $t$ | $C_{k,t}$ | Time-dependent mixture score |
+| $\bar\alpha_t\to0$ | $I$ | Standard Gaussian score $-x_t$ |
+
+A diffusion score network must account for the noise level:
+
+$$
+s_\theta(x_t,t)
+$$
+
+---
+
+# Problem 2(d) — Posterior Mean and Tweedie's Formula
+
+## 28. Keywords
+
+- Tweedie's Formula
+- Gaussian Observation Model
+- Posterior Mean
+- Score-Based Denoising
+- MMSE Estimation
+- Linear Denoiser
+- Mixture of Linear Denoisers
+- Bayesian Model Averaging
+
+---
+
+## 29. Gaussian Observation Model
+
+Consider
+
+$$
+\boxed{
+y=Ax+b+\epsilon
+}
+$$
+
+where
+
+$$
+\epsilon\sim\mathcal N(0,R)
+$$
+
+and $x$ and $\epsilon$ are independent.
+
+Equivalently,
+
+$$
+q(y\mid x)=\mathcal N(y;Ax+b,R)
+$$
+
+The prior distribution $p(x)$ is not required to be Gaussian.
+
+The marginal observation distribution is
+
+$$
+q(y)=\int q(y\mid x)p(x)\,dx
+$$
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x$ | $d\times1$ |
+| $y$ | $m\times1$ |
+| $A$ | $m\times d$ |
+| $b$ | $m\times1$ |
+| $\epsilon$ | $m\times1$ |
+| $R$ | $m\times m$ |
+| $\mathbb E[x\mid y]$ | $d\times1$ |
+| $A\mathbb E[x\mid y]$ | $m\times1$ |
+| $\nabla_y\log q(y)$ | $m\times1$ |
+
+---
+
+## 30. Tweedie's Formula
+
+### 30.1 Generalized Formula
+
+For
+
+$$
+q(y\mid x)=\mathcal N(y;Ax+b,R)
+$$
+
+with $R\succ0$:
+
+$$
+\boxed{
+\nabla_y\log q(y)
+=
+-R^{-1}
+\left(
+y-A\mathbb E[x\mid y]-b
+\right)
+}
+$$
+
+Rearranging:
+
+$$
+\boxed{
+A\mathbb E[x\mid y]
+=
+y-b+R\nabla_y\log q(y)
+}
+$$
+
+If $A$ is invertible:
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+A^{-1}
+\left(
+y-b+R\nabla_y\log q(y)
+\right)
+}
+$$
+
+If $A$ is not invertible, the projected posterior mean
+$A\mathbb E[x\mid y]$ is determined, but the full posterior
+mean may not be uniquely determined by this identity.
+
+### 30.2 Classical Tweedie's Formula
+
+For
+
+$$
+y=x+\epsilon,\qquad
+\epsilon\sim\mathcal N(0,\sigma^2I)
+$$
+
+we have
+
+$$
+A=I,\qquad b=0,\qquad R=\sigma^2I
+$$
+
+Therefore,
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+y+\sigma^2\nabla_y\log q(y)
+}
+$$
+
+Using score notation:
+
+$$
+\boxed{
+\mathbb E[x\mid y]=y+\sigma^2s(y)
+}
+$$
+
+The posterior mean equals the noisy observation plus
+a score-based correction.
+
+| Term | Meaning |
+|---|---|
+| $y$ | Noisy observation |
+| $s(y)$ | Marginal score |
+| $\sigma^2$ | Noise variance |
+| $\sigma^2s(y)$ | Denoising correction |
+| $\mathbb E[x\mid y]$ | MMSE estimate |
+
+### 30.3 Derivation of Tweedie's Formula
+
+Start with marginalization:
+
+$$
+q(y)=\int q(y\mid x)p(x)\,dx
+$$
+
+Differentiate under the integral:
+
+$$
+\nabla_yq(y)
+=
+\int\nabla_yq(y\mid x)p(x)\,dx
+$$
+
+Use
+
+$$
+\nabla_yq(y\mid x)
+=
+q(y\mid x)\nabla_y\log q(y\mid x)
+$$
+
+Then
+
+$$
+\nabla_y\log q(y)
+=
+\int
+\frac{q(y\mid x)p(x)}{q(y)}
+\nabla_y\log q(y\mid x)\,dx
+$$
+
+Applying Bayes' rule:
+
+$$
+\boxed{
+\nabla_y\log q(y)
+=
+\mathbb E[
+\nabla_y\log q(y\mid x)
+\mid y]
+}
+$$
+
+This is the marginal score identity.
+
+Since the observation is Gaussian,
+
+$$
+\nabla_y\log q(y\mid x)
+=
+-R^{-1}(y-Ax-b)
+$$
+
+Therefore,
+
+$$
+\begin{aligned}
+\nabla_y\log q(y)
+&=\mathbb E[-R^{-1}(y-Ax-b)\mid y]\\
+&=-R^{-1}(y-A\mathbb E[x\mid y]-b)
+\end{aligned}
+$$
+
+This establishes the generalized Tweedie's formula.
+
+### 30.4 Tweedie's Formula vs. Gaussian Conditioning
+
+| Property | Gaussian Conditioning | Tweedie's Formula |
+|---|---|---|
+| Prior requirement | Joint Gaussianity | General prior |
+| Required information | Joint mean and covariance | Marginal score |
+| Output | Conditional Gaussian distribution | Posterior mean or projected posterior mean |
+| Application | Linear Gaussian inference | Score-based denoising |
+
+---
+
+## 31. Diffusion Posterior Mean
+
+The diffusion observation model is
+
+$$
+x_t=
+\sqrt{\bar\alpha_t}x_0
++
+\sqrt{1-\bar\alpha_t}\epsilon
+$$
+
+where
+
+$$
+\epsilon\sim\mathcal N(0,I)
+$$
+
+### Correspondence with Gaussian Observation Model
+
+| General Model | Diffusion Model |
+|---|---|
+| $x$ | $x_0$ |
+| $y$ | $x_t$ |
+| $A$ | $\sqrt{\bar\alpha_t}I$ |
+| $b$ | $0$ |
+| $R$ | $(1-\bar\alpha_t)I$ |
+| $s(y)$ | $s_t(x_t)$ |
+| $\mathbb E[x\mid y]$ | $\mathbb E[x_0\mid x_t]$ |
+
+Using Tweedie's formula, the required result is
+
+$$
+\boxed{
+\mathbb E[x_0\mid x_t]
+=
+\frac{
+x_t+(1-\bar\alpha_t)s_t(x_t)
+}{
+\sqrt{\bar\alpha_t}
+}
+}
+$$
+
+where
+
+$$
+s_t(x_t)=\nabla_{x_t}\log q(x_t)
+$$
+
+The factor $1/\sqrt{\bar\alpha_t}$ compensates for
+the attenuation of the original signal.
+
+---
+
+## 32. Linear Denoiser
+
+Suppose
+
+$$
+x\sim\mathcal N(0,\Sigma_x)
+$$
+
+$$
+y=Ax+\epsilon
+$$
+
+$$
+\epsilon\sim\mathcal N(0,R)
+$$
+
+Gaussian conditioning gives
+
+$$
+\mathbb E[x\mid y]
+=
+\Sigma_{xy}\Sigma_{yy}^{-1}y
+$$
+
+Using
+
+$$
+\Sigma_{xy}=\Sigma_xA^\top
+$$
+
+$$
+\Sigma_{yy}=A\Sigma_xA^\top+R
+$$
+
+we obtain
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+\Sigma_xA^\top
+(A\Sigma_xA^\top+R)^{-1}y
+}
+$$
+
+Define
+
+$$
+G=
+\Sigma_xA^\top
+(A\Sigma_xA^\top+R)^{-1}
+$$
+
+Then
+
+$$
+\boxed{\hat x=Gy}
+$$
+
+This is a linear MMSE denoiser.
+
+For a nonzero Gaussian prior mean, the corresponding
+estimator is generally affine rather than purely linear.
+
+### Scalar Gaussian Denoiser
+
+For
+
+$$
+x\sim\mathcal N(0,\sigma_x^2)
+$$
+
+$$
+y=x+\epsilon
+$$
+
+$$
+\epsilon\sim\mathcal N(0,\sigma_\epsilon^2)
+$$
+
+we have
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+\frac{\sigma_x^2}
+{\sigma_x^2+\sigma_\epsilon^2}y
+}
+$$
+
+The denoising gain is
+
+$$
+g=\frac{\sigma_x^2}
+{\sigma_x^2+\sigma_\epsilon^2}
+$$
+
+| Noise Variance | Denoising Behavior |
+|---|---|
+| $\sigma_\epsilon^2\to0$ | Estimate approaches observation |
+| Moderate noise | Estimate combines prior and observation |
+| $\sigma_\epsilon^2\to\infty$ | Estimate approaches prior mean |
+
+This behavior is called shrinkage.
+
+---
+
+## 33. Mixture of Linear Denoisers
+
+For a Gaussian mixture prior:
+
+$$
+p(x)=\sum_k\pi_k\mathcal N(x;0,\Sigma_k)
+$$
+
+each component has a linear posterior mean:
+
+$$
+\mathbb E[x\mid y,c=k]=G_ky
+$$
+
+where
+
+$$
+G_k=
+\Sigma_kA^\top
+(A\Sigma_kA^\top+R)^{-1}
+$$
+
+By the law of total expectation:
+
+$$
+\boxed{
+\mathbb E[x\mid y]
+=
+\sum_k w_k(y)G_ky
+}
+$$
+
+Each individual denoiser is linear.
+
+However, the overall mixture denoiser is generally nonlinear
+because its weights depend on the observation.
+
+Define
+
+$$
+G_{\mathrm{eff}}(y)=\sum_k w_k(y)G_k
+$$
+
+Then
+
+$$
+\mathbb E[x\mid y]=G_{\mathrm{eff}}(y)y
+$$
+
+The effective matrix is input-dependent.
+
+---
+
+## 34. Posterior Mean of the Diffused Gaussian Mixture
+
+The target result of Problem 2(d) has three equivalent forms.
+
+### Form 1 — Score-Based Denoising
+
+$$
+\boxed{
+\mathbb E[x_0\mid x_t]
+=
+\frac{
+x_t+(1-\bar\alpha_t)s_t(x_t)
+}{
+\sqrt{\bar\alpha_t}
+}
+}
+$$
+
+### Form 2 — Mixture Score Representation
+
+$$
+\boxed{
+\mathbb E[x_0\mid x_t]
+=
+\frac1{\sqrt{\bar\alpha_t}}
+\left[
+x_t-
+(1-\bar\alpha_t)
+\sum_k
+w_{k,t}(x_t)C_{k,t}^{-1}x_t
+\right]
+}
+$$
+
+### Form 3 — Weighted Linear Denoisers
+
+$$
+\boxed{
+\mathbb E[x_0\mid x_t]
+=
+\sum_k
+w_{k,t}(x_t)
+\sqrt{\bar\alpha_t}
+\Sigma_kC_{k,t}^{-1}x_t
+}
+$$
+
+Define each component denoiser as
+
+$$
+G_{k,t}
+=
+\sqrt{\bar\alpha_t}
+\Sigma_kC_{k,t}^{-1}
+$$
+
+Then
+
+$$
+\boxed{
+\mathbb E[x_0\mid x_t]
+=
+\sum_k w_{k,t}(x_t)G_{k,t}x_t
+}
+$$
+
+Relevant identities for the homework derivation:
+
+$$
+\sum_k w_{k,t}(x_t)=1
+$$
+
+$$
+C_{k,t}
+=
+\bar\alpha_t\Sigma_k+
+(1-\bar\alpha_t)I
+$$
+
+$$
+I-bB^{-1}=aAB^{-1}
+$$
+
+The detailed equivalence proof is reserved for Round 2.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x_0,x_t$ | $d\times1$ |
+| $s_t(x_t)$ | $d\times1$ |
+| $\mathbb E[x_0\mid x_t]$ | $d\times1$ |
+| $\Sigma_k$ | $d\times d$ |
+| $C_{k,t}$ | $d\times d$ |
+| $C_{k,t}^{-1}$ | $d\times d$ |
+| $G_{k,t}$ | $d\times d$ |
+| $w_{k,t}(x_t)$ | Scalar |
+| $\bar\alpha_t$ | Scalar |
+
+---
+
+## 35. Problem 2 — Overall Knowledge Structure
+
+| Subproblem | Target Quantity | Main Mathematical Tool |
+|---|---|---|
+| 2(a) | $q(x_t)$ | Gaussian affine transformation and marginalization |
+| 2(a) | $w_{k,t}(x_t)$ | Bayes' rule |
+| 2(a) | $C_{k,t}$ | Covariance propagation |
+| 2(b) | $q(x_{t-1},x_t)$ | Joint Gaussian distribution |
+| 2(b) | $q(x_{t-1}\mid x_t)$ | Gaussian conditioning |
+| 2(c) | $\nabla_{x_t}\log q(x_t)$ | Gaussian score and posterior weights |
+| 2(d) | $\mathbb E[x_0\mid x_t]$ | Tweedie's formula |
+
+### Three Posterior-Weighted Structures
+
+| Quantity | Mixture Structure |
+|---|---|
+| Conditional distribution | $\sum_k w_k(y)p(x\mid y,c=k)$ |
+| Score | $\sum_k w_k(y)s_k(y)$ |
+| Posterior mean | $\sum_k w_k(y)\mathbb E[x\mid y,c=k]$ |
+
+The common strategy is to analyze each Gaussian component
+independently and then combine the results using posterior
+responsibilities.
+
+---
+
+# Part III — Connection to DDPM
+
+## 36. Conditional Score vs. Marginal Score
+
+### Conditional Score
+
+From
+
+$$
+q(x_t\mid x_0)
+=
+\mathcal N
+\left(
+x_t;
+\sqrt{\bar\alpha_t}x_0,
+(1-\bar\alpha_t)I
+\right)
+$$
+
+the Gaussian score is
+
+$$
+\nabla_{x_t}\log q(x_t\mid x_0)
+=
+-\frac{x_t-\sqrt{\bar\alpha_t}x_0}
+{1-\bar\alpha_t}
+$$
+
+Using
+
+$$
+x_t-\sqrt{\bar\alpha_t}x_0
+=
+\sqrt{1-\bar\alpha_t}\epsilon
+$$
+
+we obtain
+
+$$
+\boxed{
+\nabla_{x_t}\log q(x_t\mid x_0)
+=
+-\frac{\epsilon}{\sqrt{1-\bar\alpha_t}}
+}
+$$
+
+### Marginal Score
+
+Using the marginal score identity:
+
+$$
+\nabla_{x_t}\log q(x_t)
+=
+\mathbb E[
+\nabla_{x_t}\log q(x_t\mid x_0)
+\mid x_t]
+$$
+
+Therefore,
+
+$$
+\boxed{
+s_t(x_t)
+=
+-\frac{
+\mathbb E[\epsilon\mid x_t]
+}{
+\sqrt{1-\bar\alpha_t}
+}
+}
+$$
+
+The conditional score depends on the original clean sample.
+
+The marginal score does not require access to the original
+clean sample.
+
+---
+
+## 37. Noise Prediction Network
+
+DDPM trains a neural network
+
+$$
+\epsilon_\theta(x_t,t)
+$$
+
+using the noise prediction objective:
+
+$$
+\boxed{
+L(\theta)
+=
+\mathbb E_{x_0,t,\epsilon}
+\left[
+\|\epsilon-\epsilon_\theta(x_t,t)\|^2
+\right]
+}
+$$
+
+By the MMSE property, the theoretical optimal predictor is
+
+$$
+\epsilon^*(x_t,t)
+=
+\mathbb E[\epsilon\mid x_t,t]
+$$
+
+Hence, the predicted marginal score is
+
+$$
+\boxed{
+s_\theta(x_t,t)
+=
+-\frac{\epsilon_\theta(x_t,t)}
+{\sqrt{1-\bar\alpha_t}}
+}
+$$
+
+Noise prediction provides an indirect method for learning
+the marginal score.
+
+---
+
+## 38. Clean Sample Prediction
+
+Using the score-based posterior mean:
+
+$$
+\hat x_0
+=
+\frac{
+x_t+(1-\bar\alpha_t)s_\theta(x_t,t)
+}{
+\sqrt{\bar\alpha_t}
+}
+$$
+
+Substitute
+
+$$
+s_\theta(x_t,t)
+=
+-\frac{\epsilon_\theta(x_t,t)}
+{\sqrt{1-\bar\alpha_t}}
+$$
+
+to obtain
+
+$$
+\boxed{
+\hat x_0
+=
+\frac{
+x_t-\sqrt{1-\bar\alpha_t}\epsilon_\theta(x_t,t)
+}{
+\sqrt{\bar\alpha_t}
+}
+}
+$$
+
+If the noise predictor is optimal under MSE, this clean
+sample prediction equals the posterior mean.
+
+### Prediction Target Conversion Table
+
+| Conversion | Formula |
+|---|---|
+| Noise to score | $s_\theta=-\epsilon_\theta/\sqrt{1-\bar\alpha_t}$ |
+| Score to noise | $\epsilon_\theta=-\sqrt{1-\bar\alpha_t}s_\theta$ |
+| Noise to clean sample | $\hat x_0=(x_t-\sqrt{1-\bar\alpha_t}\epsilon_\theta)/\sqrt{\bar\alpha_t}$ |
+| Score to clean sample | $\hat x_0=(x_t+(1-\bar\alpha_t)s_\theta)/\sqrt{\bar\alpha_t}$ |
+| Clean sample to noise | $\epsilon_\theta=(x_t-\sqrt{\bar\alpha_t}\hat x_0)/\sqrt{1-\bar\alpha_t}$ |
+
+These parameterizations can be converted into one another
+for a fixed nondegenerate diffusion timestep.
+
+Different training losses and weighting schemes may still
+produce different training behavior.
+
+---
+
+## 39. Score-Based Sampling
+
+### Gradient Ascent
+
+$$
+x_{n+1}=x_n+\eta s(x_n)
+$$
+
+Repeated gradient ascent tends toward stationary points
+rather than sampling the full probability distribution.
+
+### Langevin Dynamics
+
+$$
+\boxed{
+x_{n+1}
+=
+x_n+\eta s(x_n)
++\sqrt{2\eta}\epsilon_n
+}
+$$
+
+where
+
+$$
+\epsilon_n\sim\mathcal N(0,I)
+$$
+
+| Term | Function |
+|---|---|
+| $\eta s(x_n)$ | Guide samples toward locally higher density |
+| $\sqrt{2\eta}\epsilon_n$ | Introduce randomness and exploration |
+
+Under suitable conditions, continuous Langevin dynamics
+has the target distribution as its stationary distribution.
+
+The discretized algorithm provides an approximation.
+
+Langevin dynamics and DDPM sampling are related but
+are not identical algorithms.
+
+---
+
+## 40. Posterior Mean vs. Reverse Sampling
+
+| Property | Reverse Transition | Clean Sample Estimation |
+|---|---|---|
+| Expression | $q(x_{t-1}\mid x_t)$ | $\mathbb E[x_0\mid x_t]$ |
+| Output | Probability distribution | Vector |
+| Target | Previous diffusion state | Original clean sample |
+| Uncertainty | Explicitly represented | Averaged |
+| Purpose | Generative sampling | Denoising estimation |
+
+A posterior mean does not necessarily represent a realistic
+sample from a multimodal distribution.
+
+If $x_T$ becomes independent of $x_0$, then
+
+$$
+\mathbb E[x_0\mid x_T]=\mathbb E[x_0]
+$$
+
+Therefore, directly predicting the posterior mean from
+pure noise cannot generally produce diverse samples.
+
+Diffusion models instead use an iterative reverse process:
+
+$$
+x_T\rightarrow x_{T-1}\rightarrow\cdots\rightarrow x_0
+$$
+
+---
+
+# Part IV — Quiz Review
+
+## 41. Problem-Specific Essential Formula Table
+
+| Concept | Formula |
+|---|---|
+| Noise schedule | $\alpha_t=1-\beta_t$ |
+| Cumulative alpha | $\bar\alpha_t=\prod_{s=1}^{t}\alpha_s$ |
+| Forward transition | $q(x_t\mid x_{t-1})=\mathcal N(x_t;\sqrt{\alpha_t}x_{t-1},(1-\alpha_t)I)$ |
+| Closed-form diffusion | $x_t=\sqrt{\bar\alpha_t}x_0+\sqrt{1-\bar\alpha_t}\epsilon$ |
+| Component covariance | $C_{k,t}=\bar\alpha_t\Sigma_k+(1-\bar\alpha_t)I$ |
+| Covariance recursion | $C_{k,t}=\alpha_tC_{k,t-1}+(1-\alpha_t)I$ |
+| Forward marginal | $q(x_t)=\sum_k\pi_k\mathcal N(x_t;0,C_{k,t})$ |
+| Posterior responsibility | $w_{k,t}=\pi_k\mathcal N(x_t;0,C_{k,t})/q(x_t)$ |
+| Cross-covariance | $\sqrt{\alpha_t}C_{k,t-1}$ |
+| Reverse mean | $m_{k,t}=\sqrt{\alpha_t}C_{k,t-1}C_{k,t}^{-1}x_t$ |
+| Reverse covariance | $S_{k,t}=(1-\alpha_t)C_{k,t-1}C_{k,t}^{-1}$ |
+| Reverse mixture | $q(x_{t-1}\mid x_t)=\sum_kw_{k,t}\mathcal N(x_{t-1};m_{k,t},S_{k,t})$ |
+| Score definition | $s(x)=\nabla_x\log p(x)$ |
+| Gaussian score | $s(x)=-\Sigma^{-1}(x-\mu)$ |
+| Mixture score | $s_t(x_t)=-\sum_kw_{k,t}C_{k,t}^{-1}x_t$ |
+| General Tweedie's formula | $A\mathbb E[x\mid y]=y-b+Rs(y)$ |
+| Classical Tweedie's formula | $\mathbb E[x\mid y]=y+\sigma^2s(y)$ |
+| Diffusion posterior mean | $\mathbb E[x_0\mid x_t]=(x_t+(1-\bar\alpha_t)s_t(x_t))/\sqrt{\bar\alpha_t}$ |
+| Mixture denoiser | $\mathbb E[x_0\mid x_t]=\sum_kw_{k,t}\sqrt{\bar\alpha_t}\Sigma_kC_{k,t}^{-1}x_t$ |
+| Noise-score relation | $s_\theta=-\epsilon_\theta/\sqrt{1-\bar\alpha_t}$ |
+| Clean sample prediction | $\hat x_0=(x_t-\sqrt{1-\bar\alpha_t}\epsilon_\theta)/\sqrt{\bar\alpha_t}$ |
+
+---
+
+## 42. Important Conceptual Distinctions
+
+### Single-Step vs. Cumulative Diffusion
+
+| Single-Step | Cumulative |
+|---|---|
+| $\alpha_t$ | $\bar\alpha_t$ |
+| From $x_{t-1}$ to $x_t$ | From $x_0$ to $x_t$ |
+| Noise variance $1-\alpha_t$ | Noise variance $1-\bar\alpha_t$ |
+
+### Prior vs. Posterior Mixture Weights
+
+| Prior | Posterior |
+|---|---|
+| $\pi_k$ | $w_{k,t}(x_t)$ |
+| Fixed | Observation-dependent |
+| Used in forward marginal | Used in reverse transition, score and posterior mean |
+
+### Conditional vs. Marginal Score
+
+| Conditional Score | Marginal Score |
+|---|---|
+| $\nabla_{x_t}\log q(x_t\mid x_0)$ | $\nabla_{x_t}\log q(x_t)$ |
+| Depends on clean sample | Depends on noisy sample and time |
+| Individual noise target | Conditional expectation of noise target |
+
+### MMSE vs. MAP vs. Sampling
+
+| MMSE | MAP | Sampling |
+|---|---|---|
+| Posterior mean | Posterior mode | Random posterior sample |
+| Minimizes squared error | Maximizes density | Preserves distribution |
+| May average multiple modes | Selects a mode | Represents uncertainty |
+
+### Gaussian Component vs. Gaussian Mixture
+
+| Property | Single Gaussian | Gaussian Mixture |
+|---|---|---|
+| Score | Affine; linear if zero mean | Generally nonlinear |
+| Denoiser | Affine; linear if zero mean | Generally nonlinear |
+| Conditional covariance | Observation-independent | May depend on observation |
+| Exact reverse transition | Gaussian | Gaussian mixture |
+
+---
+
+## 43. Common Mistakes
+
+- Confusing $\alpha_t$ and $\bar\alpha_t$.
+- Confusing variance with standard deviation.
+- Forgetting to square scaling coefficients when computing
+  covariance.
+- Assuming diffusion always increases total variance.
+- Assuming Gaussian mixture distributions are themselves
+  Gaussian.
+- Assuming Gaussian marginals imply a joint Gaussian.
+- Assuming zero covariance always implies independence.
+- Interchanging matrix multiplication order without
+  justification.
+- Confusing cross-covariance with individual covariance.
+- Forgetting the inverse in Gaussian conditioning.
+- Using prior mixture weights instead of posterior
+  responsibilities.
+- Treating the score as a scalar probability.
+- Differentiating the score with respect to model parameters
+  instead of the sample.
+- Assuming the mixture score is linear because its
+  component scores are linear.
+- Assuming Tweedie's formula requires a Gaussian prior.
+- Assuming MMSE and MAP are always identical.
+- Assuming the posterior mean is a posterior sample.
+- Confusing the true reverse transition with the learned
+  Gaussian reverse transition.
+- Confusing the clean-sample posterior mean with the
+  previous-state posterior mean.
+- Assuming deterministic gradient ascent performs sampling.
+
+---
+
+## 44. High-Priority Quiz Concepts
+
+1. Gaussian affine transformations preserve Gaussianity.
+
+2. Gaussian diffusion modifies both the signal and noise,
+   driving covariance toward the identity matrix.
+
+3. The forward marginal of a Gaussian mixture is a Gaussian
+   mixture with unchanged prior weights.
+
+4. The reverse transition requires posterior mixture weights.
+
+5. Gaussian conditioning provides both the conditional mean
+   and conditional covariance.
+
+6. The exact reverse transition is not generally a single
+   Gaussian distribution.
+
+7. The score is the gradient of the log probability density
+   with respect to the sample.
+
+8. A Gaussian score is affine, while a zero-mean Gaussian
+   score is linear.
+
+9. A mixture score is a posterior-weighted combination of
+   component scores.
+
+10. Tweedie's formula connects the marginal score to the
+    posterior mean of the clean data.
+
+11. The posterior mean is the optimal MSE estimator.
+
+12. A mixture of linear denoisers is generally nonlinear.
+
+13. Noise prediction, score prediction and clean-sample
+    prediction are convertible representations.
+
+14. Posterior mean estimation and generative sampling
+    are fundamentally different operations.

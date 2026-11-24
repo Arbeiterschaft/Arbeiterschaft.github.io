@@ -74,14 +74,14 @@ nav a { color: var(--fg); font-size: var(--nav-size); }
 }
 .card { color: var(--fg); display: block; }
 .card:hover { text-decoration: none; }
-.card img, .card .no-cover {
+.card img, .card video, .card .no-cover {
   width: 100%; aspect-ratio: var(--cover-ratio);
   object-fit: cover;
   border: 1px solid var(--line);
   background: var(--soft);
   display: block;
 }
-.card:hover img, .card:hover .no-cover { opacity: 0.85; }
+.card:hover img, .card:hover video, .card:hover .no-cover { opacity: 0.85; }
 .card h3 { margin: 0.8rem 0 0.25rem; font-size: var(--card-title-size); }
 .card p { margin: 0; color: var(--muted); font-size: var(--card-text-size); }
 
@@ -97,7 +97,7 @@ h3 { font-size: 1.05rem; }
 
 p, ul, ol { margin: 0 0 1rem; }
 ul, ol { padding-left: 1.25rem; }
-img { max-width: 100%; height: auto; }
+img, video { max-width: 100%; height: auto; }
 
 .meta { color: var(--muted); font-size: 0.9rem; margin-top: -0.5rem; }
 

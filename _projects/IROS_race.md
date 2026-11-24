@@ -1,7 +1,7 @@
 ---
 title: "Autonomous Racing Stack | IROS 2026 RoboRacer"
 summary: "A ROS 2 autonomy stack for a 1/10-scale race car — 7th place at the IROS 2026 RoboRacer Grand Prix."
-cover: /pics/IROS_race/race1.gif
+cover: /pics/IROS_race/race.mp4
 date: 2026-09-01
 published: true   # switch: true = shown, false = hidden
 ---
@@ -40,7 +40,10 @@ Developed a ROS 2 autonomous racing system integrating GPU-accelerated localizat
 
 Built and deployed a full autonomous racing stack on a 1/10-scale car powered by NVIDIA Jetson Orin and ROS 2. The system integrates CUDA-accelerated particle-filter localization, LiDAR-based obstacle tracking, Frenet-frame trajectory planning, and adaptive Pure Pursuit control for real-time autonomous racing. It supports dynamic obstacle avoidance, overtaking, and race-aware decision-making, achieving 7th place at the IROS 2026 RoboRacer Grand Prix.
 
-![race1](/pics/IROS_race/race1.gif)
+<!-- ![race1](/pics/IROS_race/race1.gif) -->
+
+{% include media.html src="/pics/IROS_race/race.mp4" alt="IROS_Race_Run" %}
+
 
 ---
 
