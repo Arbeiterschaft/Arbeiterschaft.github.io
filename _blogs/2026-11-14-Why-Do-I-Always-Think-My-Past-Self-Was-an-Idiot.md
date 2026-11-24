@@ -7,6 +7,7 @@ published: true   # switch: true = shown, false = hidden
 # 为什么我回顾过去时总觉得以前的自己是个傻逼
 ## Why Do I Always Think My Past Self Was an Idiot?
 *2026-11-14, 14：11 EST*
+
 **Read in:** [中文](#chinese) | [English](#english)
 
 ---
@@ -112,7 +113,7 @@ published: true   # switch: true = shown, false = hidden
 所以我决定换一种方式。我在文中提到曾多次幻想魂穿过去，但却从没试想过反过来:
 **如果我突然魂穿到2028年深秋的自己，我那时会过着什么样的生活?我应该如何评价这过去的两年时间?**
 
-我希望睁开眼我能看到落日缓缓沉入海平面，平洋微暖的海风拂面，身边不再是现在*CRF300*，而是一辆*T700*或者*Africa Twin* 
+我希望睁开眼我能看到落日缓缓沉入海平面，太平洋微暖的海风拂面，身边不再是现在*CRF300*，而是一辆*T700*或者*Africa Twin* 
 
 **希望那时的我回顾这两年，会觉得自己确实有所改变，没再像以前那样虚度时间。不管命运是眷顾我，还是时运不济命途多舛，我都能坦然接它的安排。**
 
