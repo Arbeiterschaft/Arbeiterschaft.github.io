@@ -17,7 +17,7 @@
   --nav-size:   1.3rem;   /* Projects / Blogs / Interests */
 
   /* Cards (projects, interests) */
-  --cards-per-row: 2;       /* cards in one row on a computer (phones always show 1) */
+  --cards-per-row: 3;       /* cards in one row on a computer (phones always show 1) */
   --card-gap:      2rem;    /* space between cards */
   --cover-ratio:   4 / 3;   /* cover shape: 4 / 3, 16 / 9, 1 / 1 (square) ... */
   --card-title-size: 1.05rem; /* card headline */

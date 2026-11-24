@@ -13,7 +13,7 @@ title: Home
 
 I am a robotics engineer with experience in end-to-end robotic system development, from hardware integration and embedded software to high-level algorithms. My research and professional experience spans robot learning, perception, planning, and control, with a strong focus on integrating algorithms into real-world robotic systems.
 
-[Email](jlwang@engineering.upenn.edu) | [Github](https://github.com/Arbeiterschaft) | [Linkedin](https://www.linkedin.com/in/jilu-wang-dannies/)
+[Email](mailto:jlwang@engineering.upenn.edu) | [Github](https://github.com/Arbeiterschaft) | [Linkedin](https://www.linkedin.com/in/jilu-wang-dannies/)
 </div>
 </section>
 

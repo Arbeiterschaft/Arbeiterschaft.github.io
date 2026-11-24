@@ -1,0 +1,954 @@
+# HW3 Problem 1 — Linear Regression and In-Context Learning in Transformers
+
+## 1. Keywords
+
+- Linear Regression
+- Mean Squared Error (MSE)
+- Residual
+- Gradient Descent (GD)
+- Learning Rate
+- Matrix Calculus
+- Chain Rule
+- Inner Product and Outer Product
+- Token Representation
+- Query, Key, Value (QKV)
+- Self-Attention
+- Softmax Attention
+- Linear Self-Attention (LSA)
+- Residual Connection
+- Block Matrix
+- In-Context Learning (ICL)
+- Implicit Gradient Descent
+
+---
+
+## 2. Linear Regression
+
+Given a dataset:
+
+$$
+\mathcal D=\{(x_t,y_t)\}_{t=1}^{T}
+$$
+
+Assume an unknown linear relationship:
+
+$$
+y=W^*x
+$$
+
+The objective is to learn an estimate $W$ of $W^*$.
+
+### Prediction and Residual
+
+$$
+\hat y_t=Wx_t
+$$
+
+$$
+r_t=\hat y_t-y_t=Wx_t-y_t
+$$
+
+### Matrix Dimensions
+
+| Variable | Dimension | Description |
+|---|---|---|
+| $x_t$ | $d\times 1$ | Input vector |
+| $y_t$ | $d\times 1$ | Target vector |
+| $\hat y_t$ | $d\times 1$ | Prediction |
+| $W$ | $d\times d$ | Weight matrix |
+| $r_t$ | $d\times 1$ | Residual |
+| $L(W)$ | Scalar | Loss |
+| $\nabla_W L$ | $d\times d$ | Gradient |
+| $\Delta W$ | $d\times d$ | Parameter update |
+
+### Loss Function
+
+$$
+L(W)=\frac{1}{2T}
+\sum_{t=1}^{T}\|Wx_t-y_t\|_2^2
+$$
+
+Equivalently,
+
+$$
+L(W)=\frac{1}{2T}
+\sum_{t=1}^{T}r_t^\top r_t
+$$
+
+- $1/T$: averages the loss over training samples.
+- $1/2$: cancels the factor of 2 during differentiation.
+
+---
+
+## 3. Gradient Descent
+
+Gradient descent updates model parameters in the negative
+gradient direction.
+
+$$
+W_{\mathrm{new}}=W-\eta\nabla_W L(W)
+$$
+
+Define the parameter update:
+
+$$
+\Delta W=-\eta\nabla_W L(W)
+$$
+
+Therefore,
+
+$$
+W_{\mathrm{new}}=W+\Delta W
+$$
+
+where $\eta$ is the learning rate.
+
+### Scalar Gradient Example
+
+Given:
+
+$$
+L(w)=\frac12(wx-y)^2
+$$
+
+Define:
+
+$$
+r=wx-y
+$$
+
+By the chain rule,
+
+$$
+\frac{dL}{dw}
+=
+\frac{dL}{dr}\frac{dr}{dw}
+$$
+
+Since
+
+$$
+\frac{dL}{dr}=r,\qquad
+\frac{dr}{dw}=x
+$$
+
+we obtain
+
+$$
+\boxed{
+\frac{dL}{dw}=(wx-y)x
+}
+$$
+
+The gradient descent update is
+
+$$
+w\leftarrow w-\eta(wx-y)x
+$$
+
+---
+
+## 4. Inner Product and Outer Product
+
+Let $a,b\in\mathbb R^d$.
+
+### Inner Product
+
+$$
+a^\top b=\sum_{i=1}^{d}a_i b_i
+$$
+
+### Outer Product
+
+$$
+ab^\top=
+\begin{bmatrix}
+a_1b_1 & \cdots & a_1b_d\\
+\vdots & \ddots & \vdots\\
+a_db_1 & \cdots & a_db_d
+\end{bmatrix}
+$$
+
+### Comparison
+
+| Operation | Expression | Output Dimension |
+|---|---|---|
+| Inner product | $a^\top b$ | $1\times1$ |
+| Outer product | $ab^\top$ | $d\times d$ |
+| Matrix-vector product | $(ab^\top)c$ | $d\times1$ |
+| Vector-scalar product | $a(b^\top c)$ | $d\times1$ |
+
+### Important Identity
+
+By associativity of matrix multiplication,
+
+$$
+\boxed{
+(ab^\top)c=a(b^\top c)
+}
+$$
+
+This identity connects linear self-attention with gradient
+descent.
+
+---
+
+## 5. Matrix Calculus
+
+For a scalar function $f(W)$, its gradient with respect to
+a matrix is
+
+$$
+[\nabla_W f]_{ij}
+=
+\frac{\partial f}{\partial W_{ij}}
+$$
+
+Therefore,
+
+$$
+\operatorname{shape}(\nabla_W f)
+=
+\operatorname{shape}(W)
+$$
+
+### Common Gradient Formulas
+
+| Function | Gradient |
+|---|---|
+| $f(x)=a^\top x$ | $\nabla_x f=a$ |
+| $f(x)=x^\top x$ | $\nabla_x f=2x$ |
+| $f(x)=\frac12\|x\|^2$ | $\nabla_x f=x$ |
+| $f(x)=x^\top Ax$ | $\nabla_x f=(A+A^\top)x$ |
+| $f(x)=\frac12\|Ax-b\|^2$ | $\nabla_x f=A^\top(Ax-b)$ |
+| $f(W)=a^\top Wb$ | $\nabla_W f=ab^\top$ |
+
+### Outer Product as a Matrix Gradient
+
+Given:
+
+$$
+f(W)=a^\top Wb
+$$
+
+Expanding the matrix multiplication:
+
+$$
+f(W)=\sum_i\sum_j a_iW_{ij}b_j
+$$
+
+Taking the partial derivative:
+
+$$
+\frac{\partial f}{\partial W_{ij}}=a_i b_j
+$$
+
+Combining all partial derivatives:
+
+$$
+\boxed{\nabla_W f=ab^\top}
+$$
+
+Matrix gradients in neural networks often have an outer-product
+structure involving the input and the backpropagated error.
+
+### Linear Regression Gradient
+
+The gradient required in Problem 1(a) is
+
+$$
+\boxed{
+\nabla_W L(W)
+=
+\frac1T\sum_{t=1}^{T}
+(Wx_t-y_t)x_t^\top
+}
+$$
+
+Therefore,
+
+$$
+\boxed{
+\Delta W
+=
+-\frac{\eta}{T}
+\sum_{t=1}^{T}
+(Wx_t-y_t)x_t^\top
+}
+$$
+
+Dimension check:
+
+$$
+\underbrace{(Wx_t-y_t)}_{d\times1}
+\underbrace{x_t^\top}_{1\times d}
+\in\mathbb R^{d\times d}
+$$
+
+---
+
+## 6. Equivalent Parameter and Target Updates
+
+A parameter update changes the residual to
+
+$$
+r_{\mathrm{new}}
+=
+(W+\Delta W)x-y
+$$
+
+Rearranging:
+
+$$
+\begin{aligned}
+(W+\Delta W)x-y
+&=Wx+\Delta Wx-y\\
+&=Wx-(y-\Delta Wx)
+\end{aligned}
+$$
+
+Define
+
+$$
+\boxed{\Delta y=-\Delta Wx}
+$$
+
+Then
+
+$$
+\boxed{
+(W+\Delta W)x-y
+=
+Wx-(y+\Delta y)
+}
+$$
+
+For the entire dataset:
+
+$$
+\begin{aligned}
+L(W+\Delta W)
+&=
+\frac{1}{2T}
+\sum_{t=1}^{T}
+\|(W+\Delta W)x_t-y_t\|^2\\
+&=
+\frac{1}{2T}
+\sum_{t=1}^{T}
+\|Wx_t-(y_t-\Delta Wx_t)\|^2
+\end{aligned}
+$$
+
+Thus, updating the regression parameters is equivalent,
+in terms of residuals and loss, to updating the target
+representations while keeping $W$ fixed.
+
+### Comparison
+
+| Property | Parameter Update | Target Update |
+|---|---|---|
+| Weight | $W+\Delta W$ | $W$ |
+| Input | $x$ | $x$ |
+| Target | $y$ | $y-\Delta Wx$ |
+| Prediction | $(W+\Delta W)x$ | $Wx$ |
+| Residual | Identical | Identical |
+| Loss | Identical | Identical |
+
+### Numerical Example
+
+Given:
+
+$$
+w=1,\quad x=2,\quad y=6,\quad \Delta w=1
+$$
+
+| Variable | Original | Parameter Update | Target Update |
+|---|---:|---:|---:|
+| $w$ | 1 | 2 | 1 |
+| $x$ | 2 | 2 | 2 |
+| $y$ | 6 | 6 | 4 |
+| Prediction | 2 | 4 | 2 |
+| Residual | -4 | -2 | -2 |
+| Loss | 8 | 2 | 2 |
+
+Important: this equivalence concerns residuals and loss,
+not identical predictions or actual parameter training.
+The modified target is an internal representation, not a
+replacement for the original ground-truth label.
+
+---
+
+## 7. In-Context Learning (ICL)
+
+In-context learning is the ability of a model to adapt to
+a task using examples provided in its input context without
+updating its model parameters.
+
+### Traditional Learning vs. In-Context Learning
+
+| Property | Traditional Learning | In-Context Learning |
+|---|---|---|
+| Information source | Training dataset | Context examples |
+| Forward pass | Yes | Yes |
+| Backpropagation | Yes, for GD training | No |
+| Optimizer step | Yes, for GD training | No |
+| Parameter update | Yes | No |
+| Adaptation | Parameter changes | Context-dependent computation |
+
+### Model Parameters vs. Token Representations
+
+| Property | Model Parameters | Token Representations |
+|---|---|---|
+| Example | $W_Q,W_K,W_V,W_O$ | $Z,Q,K,V$ |
+| Forward pass | Fixed | Computed or updated |
+| Optimizer step | Updated | Not directly optimized |
+| Dependency | Learned parameters | Current input and parameters |
+
+A forward pass can produce different computations for different
+inputs, even though the model parameters remain fixed.
+
+Problem 1(b) investigates a special construction in which a
+transformer forward pass simulates one gradient descent step
+in linear regression.
+
+This is one theoretical mechanism for ICL, not a universal
+explanation of all in-context learning behavior.
+
+---
+
+## 8. Token Representation
+
+Each regression sample is represented as a token:
+
+$$
+z_t=
+\begin{bmatrix}
+x_t\\
+y_t
+\end{bmatrix}
+\in\mathbb R^{2d}
+$$
+
+Define the token dimension:
+
+$$
+D=2d
+$$
+
+The complete context is
+
+$$
+Z=[z_1,z_2,\ldots,z_T]
+\in\mathbb R^{D\times T}
+$$
+
+Each column represents one token.
+
+### Matrix Dimensions
+
+| Variable | Dimension |
+|---|---|
+| $x_t$ | $d\times1$ |
+| $y_t$ | $d\times1$ |
+| $z_t$ | $2d\times1$ |
+| $Z$ | $2d\times T$ |
+
+The entire regression dataset becomes the transformer's context.
+
+---
+
+## 9. Query, Key, Value (QKV)
+
+Each token is projected into three vectors:
+
+$$
+q_t=W_Qz_t
+$$
+
+$$
+k_t=W_Kz_t
+$$
+
+$$
+v_t=W_Vz_t
+$$
+
+For all tokens:
+
+$$
+Q=W_QZ
+$$
+
+$$
+K=W_KZ
+$$
+
+$$
+V=W_VZ
+$$
+
+| Component | Interpretation |
+|---|---|
+| Query | Information sought by the current token |
+| Key | Features used for matching tokens |
+| Value | Information transmitted between tokens |
+| Output projection | Transforms the aggregated information |
+
+The attention score between source token $t$ and query token
+$j$ is
+
+$$
+s_{tj}=k_t^\top q_j
+$$
+
+---
+
+## 10. Standard Self-Attention
+
+### Softmax
+
+$$
+\operatorname{softmax}(s_i)
+=
+\frac{\exp(s_i)}
+{\sum_j\exp(s_j)}
+$$
+
+Properties:
+
+$$
+a_i>0,\qquad \sum_i a_i=1
+$$
+
+### Scaled Dot-Product Attention
+
+$$
+a_{tj}
+=
+\frac{
+\exp(k_t^\top q_j/\sqrt{d_k})
+}{
+\sum_{s=1}^{T}
+\exp(k_s^\top q_j/\sqrt{d_k})
+}
+$$
+
+The attention output for token $j$ is
+
+$$
+\operatorname{Attention}(Z)_j
+=
+O\sum_{t=1}^{T}a_{tj}v_t
+$$
+
+Using the column-token convention:
+
+$$
+\operatorname{Attention}(Z)
+=
+OV\operatorname{softmax}
+\left(\frac{K^\top Q}{\sqrt{d_k}}\right)
+$$
+
+Softmax is applied over the source tokens for each query.
+
+### Multi-Head Self-Attention
+
+Multiple attention heads operate in different feature spaces.
+
+The unscaled notation used in HW3 is
+
+$$
+\operatorname{MHSA}(Z)
+=
+\sum_{h=1}^{H}
+O_hV_h\operatorname{softmax}(K_h^\top Q_h)
+$$
+
+---
+
+## 11. Linear Self-Attention (LSA)
+
+Problem 1 considers:
+
+- A single transformer layer.
+- A single attention head.
+- No MLP.
+- No softmax.
+- No attention scaling factor.
+
+The attention output is
+
+$$
+\boxed{
+\operatorname{LSA}_{\theta}(Z)
+=
+OVK^\top Q
+}
+$$
+
+where
+
+$$
+\theta=\{W_Q,W_K,W_V,W_O\},
+\qquad O=W_O
+$$
+
+For an individual token:
+
+$$
+\boxed{
+\operatorname{LSA}_{\theta}(Z)_j
+=
+O\sum_{t=1}^{T}
+v_t(k_t^\top q_j)
+}
+$$
+
+### Softmax Attention vs. Linear Self-Attention
+
+| Property | Softmax Attention | Linear Self-Attention |
+|---|---|---|
+| Weight | Normalized exponential | Raw dot product |
+| Negative weights | No | Possible |
+| Sum of weights | 1 | Unconstrained |
+| Softmax | Yes | No |
+| Matrix reassociation | Generally not possible | Possible |
+
+Although called linear self-attention, LSA is not linear
+with respect to the entire input $Z$, because $Q$, $K$,
+and $V$ all depend on $Z$.
+
+### Matrix Dimensions
+
+Using $D=2d$:
+
+| Matrix | Dimension |
+|---|---|
+| $Z$ | $D\times T$ |
+| $W_Q$ | $D\times D$ |
+| $W_K$ | $D\times D$ |
+| $W_V$ | $D\times D$ |
+| $W_O=O$ | $D\times D$ |
+| $q_j,k_t,v_t$ | $D\times1$ |
+| $Q,K,V$ | $D\times T$ |
+| $k_t^\top q_j$ | Scalar |
+| $K^\top Q$ | $T\times T$ |
+| $v_tk_t^\top$ | $D\times D$ |
+| $VK^\top$ | $D\times D$ |
+| $OVK^\top Q$ | $D\times T$ |
+
+---
+
+## 12. Alternative Forms of Linear Self-Attention
+
+Starting from
+
+$$
+\operatorname{LSA}(Z)_j
+=
+O\sum_{t=1}^{T}v_t(k_t^\top q_j)
+$$
+
+Using associativity:
+
+$$
+v_t(k_t^\top q_j)
+=
+(v_tk_t^\top)q_j
+$$
+
+Therefore,
+
+$$
+\begin{aligned}
+\operatorname{LSA}(Z)_j
+&=
+O\sum_{t=1}^{T}(v_tk_t^\top)q_j\\
+&=
+O\left(\sum_{t=1}^{T}v_tk_t^\top\right)q_j
+\end{aligned}
+$$
+
+Define a context-dependent matrix:
+
+$$
+M(Z)=\sum_{t=1}^{T}v_tk_t^\top=VK^\top
+$$
+
+Then
+
+$$
+\boxed{
+\operatorname{LSA}(Z)_j=OM(Z)q_j
+}
+$$
+
+### Two Equivalent Computation Orders
+
+$$
+\boxed{
+OV(K^\top Q)=O(VK^\top)Q
+}
+$$
+
+| Computation | Intermediate Matrix | Dimension |
+|---|---|---|
+| Attention scores first | $K^\top Q$ | $T\times T$ |
+| Context aggregation first | $VK^\top$ | $D\times D$ |
+
+The matrix $M(Z)$ depends on the input context, even though
+the transformer parameters remain fixed.
+
+Different contexts can therefore produce different effective
+transformations.
+
+---
+
+## 13. Residual Connection
+
+The transformer layer updates the tokens through
+
+$$
+\boxed{
+Z_{\mathrm{new}}
+=
+Z+\operatorname{LSA}(Z)
+}
+$$
+
+For each token:
+
+$$
+z_{j,\mathrm{new}}
+=
+z_j+\operatorname{LSA}(Z)_j
+$$
+
+### Comparison with Gradient Descent
+
+| Property | Gradient Descent | Transformer Layer |
+|---|---|---|
+| Update rule | $W\leftarrow W+\Delta W$ | $Z\leftarrow Z+\operatorname{LSA}(Z)$ |
+| Updated object | Model parameters | Token representations |
+| Update source | Loss gradient | Attention computation |
+| Context dependency | Training samples | Input tokens |
+
+---
+
+## 14. Connecting Linear Self-Attention and Gradient Descent
+
+The regression update is
+
+$$
+\Delta W
+=
+-\frac{\eta}{T}
+\sum_{t=1}^{T}
+(Wx_t-y_t)x_t^\top
+$$
+
+The equivalent target update is
+
+$$
+\Delta y_j=-\Delta Wx_j
+$$
+
+Substituting the regression update:
+
+$$
+\Delta y_j
+=
+\frac{\eta}{T}
+\sum_{t=1}^{T}
+(Wx_t-y_t)x_t^\top x_j
+$$
+
+By associativity:
+
+$$
+\boxed{
+\Delta y_j
+=
+\frac{\eta}{T}
+\sum_{t=1}^{T}
+(Wx_t-y_t)(x_t^\top x_j)
+}
+$$
+
+Compare this with
+
+$$
+\operatorname{LSA}(Z)_j
+=
+O\sum_{t=1}^{T}v_t(k_t^\top q_j)
+$$
+
+### Structural Correspondence
+
+| Gradient Descent | Linear Self-Attention |
+|---|---|
+| Training sample $(x_t,y_t)$ | Token $z_t$ |
+| Residual $Wx_t-y_t$ | Value information |
+| Training input $x_t$ | Key information |
+| Current input $x_j$ | Query information |
+| $x_t^\top x_j$ | Key-query inner product |
+| Sum over training samples | Sum over context tokens |
+| $\eta/T$ | Scaling through projection matrices |
+| Equivalent target update | Attention output |
+
+The construction required in Problem 1(b) must satisfy
+
+$$
+\boxed{
+\operatorname{LSA}_{\theta}(Z)_j
+=
+\begin{bmatrix}
+0\\
+-\Delta Wx_j
+\end{bmatrix}
+}
+$$
+
+Consequently, the residual connection gives
+
+$$
+\begin{aligned}
+z_{j,\mathrm{new}}
+&=
+\begin{bmatrix}
+x_j\\
+y_j
+\end{bmatrix}
++
+\begin{bmatrix}
+0\\
+-\Delta Wx_j
+\end{bmatrix}\\
+&=
+\begin{bmatrix}
+x_j\\
+y_j-\Delta Wx_j
+\end{bmatrix}
+\end{aligned}
+$$
+
+Requirements:
+
+- The input component $x_j$ remains unchanged.
+- The target representation $y_j$ is updated.
+- The regression matrix $W$ remains unchanged.
+- The transformer parameters $\theta$ remain unchanged.
+- The attention update depends on the entire dataset.
+- $\theta$ may depend on $W$, $\eta$, and $T$.
+- $\theta$ must not depend on the specific dataset.
+
+There are two distinct sets of parameters:
+
+| Parameters | Role |
+|---|---|
+| $W$ | Regression model being simulated |
+| $\theta=\{W_Q,W_K,W_V,W_O\}$ | Transformer performing the simulation |
+
+The key idea is that attention performs a context-dependent
+computation equivalent to a regression gradient update in
+terms of the resulting residuals.
+
+---
+
+## 15. Block Matrices
+
+Given
+
+$$
+z=
+\begin{bmatrix}
+x\\y
+\end{bmatrix}
+$$
+
+and
+
+$$
+A=
+\begin{bmatrix}
+A_{11}&A_{12}\\
+A_{21}&A_{22}
+\end{bmatrix}
+$$
+
+where each block is $d\times d$, we have
+
+$$
+Az=
+\begin{bmatrix}
+A_{11}x+A_{12}y\\
+A_{21}x+A_{22}y
+\end{bmatrix}
+$$
+
+### Common Block Matrix Operations
+
+| Operation | Block Matrix | Output |
+|---|---|---|
+| Keep upper component | $\begin{bmatrix}I&0\\0&0\end{bmatrix}$ | $\begin{bmatrix}x\\0\end{bmatrix}$ |
+| Keep lower component | $\begin{bmatrix}0&0\\0&I\end{bmatrix}$ | $\begin{bmatrix}0\\y\end{bmatrix}$ |
+| Swap components | $\begin{bmatrix}0&I\\I&0\end{bmatrix}$ | $\begin{bmatrix}y\\x\end{bmatrix}$ |
+| Difference | $\begin{bmatrix}0&0\\I&-I\end{bmatrix}$ | $\begin{bmatrix}0\\x-y\end{bmatrix}$ |
+
+Block matrices allow us to construct projections that extract,
+combine, or transform specific components of a token.
+
+---
+
+## 16. Essential Formula Summary
+
+| Concept | Formula |
+|---|---|
+| Linear regression | $\hat y=Wx$ |
+| Residual | $r=Wx-y$ |
+| Regression loss | $L(W)=\frac1{2T}\sum_t\|Wx_t-y_t\|^2$ |
+| Matrix gradient | $\nabla_W L=\frac1T\sum_t(Wx_t-y_t)x_t^\top$ |
+| Gradient descent | $\Delta W=-\eta\nabla_W L$ |
+| Equivalent target update | $\Delta y=-\Delta Wx$ |
+| Outer-product identity | $(ab^\top)c=a(b^\top c)$ |
+| Token representation | $z_t=[x_t^\top,y_t^\top]^\top$ |
+| Query projection | $Q=W_QZ$ |
+| Key projection | $K=W_KZ$ |
+| Value projection | $V=W_VZ$ |
+| Linear self-attention | $\operatorname{LSA}(Z)=OVK^\top Q$ |
+| Single-token attention | $\operatorname{LSA}(Z)_j=O\sum_t v_t(k_t^\top q_j)$ |
+| Context aggregation | $M(Z)=VK^\top$ |
+| Residual connection | $Z_{\mathrm{new}}=Z+\operatorname{LSA}(Z)$ |
+
+---
+
+## 17. Common Mistakes
+
+- Confusing the regression matrix $W$ with the transformer
+  parameters $\theta$.
+- Confusing inner products with outer products.
+- Forgetting that matrix gradients have the same shape as
+  the parameters.
+- Applying softmax in the linear self-attention construction.
+- Forgetting the negative sign in $\Delta y=-\Delta Wx$.
+- Assuming equivalent residuals imply identical predictions.
+- Assuming a forward pass updates model parameters.
+- Assuming all in-context learning is implemented through
+  gradient descent.
+- Assuming linear self-attention is linear in the entire
+  input matrix $Z$.
+
+---
+
+## 18. Key Takeaways
+
+1. Linear regression gradients have an outer-product structure.
+2. Linear self-attention also aggregates outer products.
+3. A regression parameter update can be expressed as an
+   equivalent update to target representations.
+4. Transformer parameters can remain fixed while attention
+   computes dataset-dependent transformations.
+5. Under a suitable construction, a transformer forward pass
+   can simulate one gradient descent step in linear regression
+   through an equivalent token update.
