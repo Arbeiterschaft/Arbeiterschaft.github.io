@@ -22,6 +22,9 @@
   --cover-ratio:   4 / 3;   /* cover shape: 4 / 3, 16 / 9, 1 / 1 (square) ... */
   --card-title-size: 1.05rem; /* card headline */
   --card-text-size:  1rem;    /* card one-sentence intro */
+
+  /* Images & videos inside a page (not card covers) */
+  --media-max-width: 720px;   /* widest a picture/video gets; centered */
 }
 
 * { box-sizing: border-box; }
@@ -98,6 +101,13 @@ h3 { font-size: 1.05rem; }
 p, ul, ol { margin: 0 0 1rem; }
 ul, ol { padding-left: 1.25rem; }
 img, video { max-width: 100%; height: auto; }
+
+/* Images & videos inside a page: capped width, centered. Cards and the home photo keep their own sizes. */
+main img:not(.card img, .avatar), main video:not(.card video) {
+  display: block;
+  max-width: min(100%, var(--media-max-width));
+  margin: 0 auto;
+}
 
 .meta { color: var(--muted); font-size: 0.9rem; margin-top: -0.5rem; }
 

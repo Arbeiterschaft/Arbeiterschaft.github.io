@@ -67,7 +67,8 @@ The site picks how to show a file from its extension:
 | `.gif` `.jpg` `.jpeg` `.png` `.webp` | image |
 | `.mp4` `.webm` | video: plays on its own, loops, muted, no controls |
 
-Videos use the same size, crop and border as images. They only download when
+Inside a page, images and videos are centered and at most `--media-max-width` wide
+(720px, set in the SETTINGS block of `assets/style.css`). On cards, videos use the same size, crop and border as images. They only download when
 they come near the screen, and they pause when you scroll away.
 
 **Card cover:** set `cover:` in the front matter to an image or video path.
