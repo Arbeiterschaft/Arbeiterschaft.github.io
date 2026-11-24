@@ -85,6 +85,12 @@ For a video (or an image), use the include instead. Markdown `![]()` can't show 
 {% include media.html src="/pics/IROS_race/demo.mp4" alt="Overtaking run" %}
 ```
 
+To add a caption under an image or video, add `caption=` (Markdown like `*italic*` or links works):
+
+```markdown
+{% include media.html src="/pics/IROS_race/race.mp4" alt="Race run" caption="Overtaking at the IROS 2026 Grand Prix" %}
+```
+
 Tip: an MP4 is usually 5–10× smaller than the same clip as a GIF. To convert:
 `ffmpeg -i clip.gif -movflags +faststart -pix_fmt yuv420p -vf "scale=trunc(iw/2)*2:trunc(ih/2)*2" clip.mp4`
 

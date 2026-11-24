@@ -2,14 +2,21 @@
   Image or video, chosen by file extension.
   Usage: {% include media.html src="/pics/My_project/demo.mp4" alt="What it shows" %}
   Optional: class="..."
+            caption="Text under it"  (Markdown allowed: *italic*, **bold**, [links](...))
   .mp4 / .webm  -> muted, looping, inline <video> with no controls. It loads when it
                    comes near the screen and pauses when it leaves (assets/media.js).
   anything else -> <img> (gif, jpg, jpeg, png, webp ...)
 {%- endcomment -%}
 {%- assign media_src = include.src | strip -%}
 {%- assign media_ext = media_src | split: "?" | first | split: "#" | first | split: "." | last | downcase -%}
+{%- if include.caption and include.caption != "" -%}
+<figure class="media-figure">
+{%- endif -%}
 {%- if media_ext == "mp4" or media_ext == "webm" -%}
 <video class="lazy-video{% if include.class %} {{ include.class }}{% endif %}" data-src="{{ media_src | relative_url }}" muted loop playsinline disablepictureinpicture preload="none" aria-label="{{ include.alt | escape }}"></video>
 {%- else -%}
 <img{% if include.class %} class="{{ include.class }}"{% endif %} src="{{ media_src | relative_url }}" alt="{{ include.alt | escape }}" loading="lazy">
+{%- endif -%}
+{%- if include.caption and include.caption != "" -%}
+<figcaption>{{ include.caption | markdownify | remove: "<p>" | remove: "</p>" | strip }}</figcaption></figure>
 {%- endif -%}
