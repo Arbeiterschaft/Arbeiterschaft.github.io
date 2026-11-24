@@ -44,6 +44,8 @@ Built and deployed a full autonomous racing stack on a 1/10-scale car powered by
 
 {% include media.html src="/pics/IROS_race/race.mp4" alt="IROS_Race_Run" %}
 
+{% include media.html src="/pics/IROS_race/racing2_web.mp4" alt="Run2" %}
+
 
 ---
 
@@ -55,4 +57,4 @@ Built and deployed a full autonomous racing stack on a 1/10-scale car powered by
 - Developed adaptive-lookahead Pure Pursuit control with curvature-aware speed limits and braking-constrained velocity profiles; tuned control parameters for racing stability and performance.
 - Integrated SLAM Toolbox mapping and CUDA-based particle-filter localization; passed organizer-required obstacle-avoidance tests and finished **7th at the IROS 2026 RoboRacer Grand Prix**.
 
-![planner](/pics/IROS_race/planner.gif)
+{% include media.html src="/pics/IROS_race/planner_web.mp4" alt="planner" %}

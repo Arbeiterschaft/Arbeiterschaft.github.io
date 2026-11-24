@@ -1,7 +1,7 @@
 ---
 title: "Vision Ground"
 summary: "Depth-camera perception, calibration and outdoor localization for rovers."
-cover: /pics/Vision_Ground/video_20260808_161332.gif
+cover: /pics/Vision_Ground/rover.mp4
 date: 2026-08-01
 published: true   # switch: true = shown, false = hidden
 ---
